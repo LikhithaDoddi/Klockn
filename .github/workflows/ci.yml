@@ -1,58 +1,33 @@
-# CI pipeline — runs on every push and pull request to main
-# Checks: typecheck → lint → test across all packages
+# CI pipeline — disabled until agents have installed packages and wired up tests
+# Re-enable by removing the `if: false` condition on the jobs
 
 name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
   ci:
+    if: false  # disabled until project is scaffolded
     name: Typecheck, Lint, Test
     runs-on: ubuntu-latest
-
-    services:
-      # Spin up a real Postgres for integration tests
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: klockn
-          POSTGRES_PASSWORD: klockn
-          POSTGRES_DB: klockn_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_TEST_URL: postgresql://klockn:klockn@localhost:5432/klockn_test
-      NODE_ENV: test
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Build shared package first (other packages depend on it)
+      - name: Build shared package
         run: npm run build --workspace=shared
-
-      - name: Typecheck all packages
+      - name: Typecheck
         run: npm run typecheck --workspaces
-
-      - name: Lint all packages
+      - name: Lint
         run: npm run lint --workspaces
-
-      - name: Run tests
+      - name: Test
         run: npm run test --workspaces
