@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Klockn — Market Research & Competitive Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --purple:#7C3AED; --coral:#F97316; --green:#10B981;
+      --red:#EF4444; --amber:#F59E0B;
+      --ink:#09090B; --muted:#6B7280; --border:#E5E7EB;
+    }
+    body{font-family:'Inter',sans-serif;background:#fff;color:var(--ink);line-height:1.6;}
+
+    /* ── Print styles ── */
+    @media print {
+      .no-print{display:none!important}
+      .page-break{page-break-before:always}
+      body{font-size:12px}
+      .cover{page-break-after:always}
+    }
+
+    /* ── Print button ── */
+    .print-bar{
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      background:var(--ink);padding:12px 40px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .print-bar span{font-size:13px;color:rgba(255,255,255,0.5)}
+    .print-btn{
+      padding:8px 22px;background:var(--purple);color:#fff;
+      border:none;border-radius:100px;font-size:13px;font-weight:600;
+      cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;
+    }
+    .print-btn:hover{background:#6D28D9}
+
+    /* ── Layout ── */
+    .doc{max-width:900px;margin:0 auto;padding:72px 48px 120px;}
+
+    /* ── Cover ── */
+    .cover{
+      min-height:100vh;display:flex;flex-direction:column;
+      justify-content:space-between;padding:80px 0 60px;
+      border-bottom:2px solid var(--ink);margin-bottom:80px;
+    }
+    .cover-tag{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);
+      color:var(--purple);font-size:12px;font-weight:600;
+      padding:6px 14px;border-radius:100px;margin-bottom:48px;width:fit-content;
+    }
+    .cover-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+    .cover-logo-word{font-size:28px;font-weight:900;letter-spacing:-1px;}
+    .cover-h{font-size:clamp(44px,6vw,72px);font-weight:900;letter-spacing:-3px;line-height:1.0;margin-bottom:24px;}
+    .cover-h span{
+      background:linear-gradient(135deg,var(--purple),var(--coral));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .cover-sub{font-size:18px;color:var(--muted);max-width:500px;line-height:1.7;}
+    .cover-meta{display:flex;gap:40px;flex-wrap:wrap;}
+    .cover-meta-item{font-size:13px;color:var(--muted);}
+    .cover-meta-item strong{display:block;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+
+    /* ── Section headers ── */
+    .sec-num{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--purple);margin-bottom:8px;}
+    .sec-h{font-size:clamp(28px,4vw,40px);font-weight:900;letter-spacing:-1.5px;margin-bottom:12px;}
+    .sec-sub{font-size:16px;color:var(--muted);margin-bottom:48px;max-width:560px;line-height:1.7;}
+    .section{margin-bottom:80px;}
+
+    /* ── Executive summary boxes ── */
+    .summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:48px;}
+    .summary-box{padding:28px;border-radius:16px;border:1.5px solid var(--border);}
+    .sb-icon{font-size:28px;margin-bottom:12px;display:block;}
+    .sb-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+    .sb-desc{font-size:13px;color:var(--muted);line-height:1.6;}
+    .sb-purple{border-color:rgba(124,58,237,0.25);background:rgba(124,58,237,0.03);}
+    .sb-coral {border-color:rgba(249,115,22,0.25); background:rgba(249,115,22,0.03);}
+    .sb-green {border-color:rgba(16,185,129,0.25);  background:rgba(16,185,129,0.03);}
+    .sb-amber {border-color:rgba(245,158,11,0.25);  background:rgba(245,158,11,0.03);}
+
+    /* ── Market size ── */
+    .market-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:48px;}
+    .market-box{padding:32px;border-radius:16px;background:var(--ink);color:#fff;}
+    .mb-size{font-size:36px;font-weight:900;letter-spacing:-2px;margin-bottom:4px;}
+    .mb-label{font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:8px;}
+    .mb-growth{font-size:13px;font-weight:600;color:var(--green);}
+
+    /* ── Competitor table ── */
+    .comp-table{width:100%;border-collapse:collapse;margin-bottom:48px;font-size:13px;}
+    .comp-table th{
+      padding:12px 16px;text-align:left;
+      font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+      color:var(--muted);border-bottom:2px solid var(--ink);
+    }
+    .comp-table td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:top;}
+    .comp-table tr:last-child td{border-bottom:none;}
+    .comp-table tr:hover td{background:#FAFAFA;}
+    .td-name{font-weight:700;color:var(--ink);}
+    .td-cat{font-size:11px;color:var(--muted);}
+    .check{color:var(--green);font-weight:700;}
+    .cross{color:var(--red);}
+    .partial{color:var(--amber);}
+    .gap-badge{
+      display:inline-block;font-size:10px;font-weight:700;
+      padding:2px 8px;border-radius:100px;margin-top:4px;
+    }
+    .gap-yes{background:rgba(16,185,129,0.12);color:#059669;border:1px solid rgba(16,185,129,0.25);}
+    .gap-no {background:rgba(239,68,68,0.1); color:#DC2626;border:1px solid rgba(239,68,68,0.2);}
+    .gap-partial{background:rgba(245,158,11,0.1);color:#D97706;border:1px solid rgba(245,158,11,0.2);}
+
+    /* ── Gap analysis ── */
+    .gap-row{
+      display:flex;align-items:flex-start;gap:20px;
+      padding:28px;border-radius:16px;border:1.5px solid var(--border);
+      margin-bottom:16px;
+    }
+    .gap-num{
+      width:40px;height:40px;border-radius:10px;flex-shrink:0;
+      background:var(--ink);color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;font-weight:800;margin-top:2px;
+    }
+    .gap-title{font-size:17px;font-weight:700;margin-bottom:6px;}
+    .gap-desc{font-size:14px;color:var(--muted);line-height:1.65;}
+    .gap-klockn{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;font-weight:600;color:var(--purple);
+      background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);
+      padding:4px 12px;border-radius:100px;margin-top:10px;
+    }
+
+    /* ── Risk cards ── */
+    .risk-card{
+      padding:32px;border-radius:16px;margin-bottom:20px;
+      border-left:4px solid;
+    }
+    .risk-1{border-color:var(--red);background:#FEF2F2;}
+    .risk-2{border-color:var(--amber);background:#FFFBEB;}
+    .risk-3{border-color:var(--coral);background:#FFF7ED;}
+    .risk-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+    .risk-1 .risk-label{color:var(--red);}
+    .risk-2 .risk-label{color:var(--amber);}
+    .risk-3 .risk-label{color:var(--coral);}
+    .risk-title{font-size:20px;font-weight:800;margin-bottom:10px;letter-spacing:-0.5px;}
+    .risk-desc{font-size:14px;color:#555;line-height:1.7;margin-bottom:12px;}
+    .risk-fix{font-size:13px;font-weight:600;color:var(--ink);}
+    .risk-fix span{color:var(--green);}
+
+    /* ── PMF verdict ── */
+    .pmf-box{
+      background:var(--ink);color:#fff;
+      border-radius:20px;padding:48px;margin-bottom:48px;
+    }
+    .pmf-title{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:8px;}
+    .pmf-verdict{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);
+      color:#34D399;font-size:14px;font-weight:700;
+      padding:8px 18px;border-radius:100px;margin-bottom:28px;
+    }
+    .pmf-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;}
+    .pmf-item{padding:20px;border-radius:12px;}
+    .pmf-green{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);}
+    .pmf-red  {background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2);}
+    .pmf-item-title{font-size:13px;font-weight:700;margin-bottom:6px;}
+    .pmf-green .pmf-item-title{color:#34D399;}
+    .pmf-red   .pmf-item-title{color:#F87171;}
+    .pmf-item-desc{font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;}
+
+    /* ── Strategy recs ── */
+    .rec-row{display:flex;gap:16px;margin-bottom:16px;align-items:flex-start;}
+    .rec-ico{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .rec-t{font-size:16px;font-weight:700;margin-bottom:4px;}
+    .rec-d{font-size:14px;color:var(--muted);line-height:1.6;}
+
+    /* ── Footer ── */
+    .doc-footer{border-top:1px solid var(--border);padding-top:32px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+    .doc-footer span{font-size:12px;color:var(--muted);}
+
+    @media(max-width:600px){
+      .doc{padding:60px 24px 80px;}
+      .summary-grid,.market-grid,.pmf-grid{grid-template-columns:1fr;}
+      .print-bar{padding:12px 20px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Print bar -->
+<div class="print-bar no-print">
+  <span>Klockn — Market Research Report · Confidential</span>
+  <button class="print-btn" onclick="window.print()">Save as PDF →</button>
+</div>
+
+<div class="doc" style="margin-top:52px;">
+
+  <!-- ══ COVER ══ -->
+  <div class="cover">
+    <div>
+      <div class="cover-tag">Confidential — For co-founder review</div>
+      <div class="cover-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" stroke="rgba(124,58,237,0.4)" stroke-width="1.5"/>
+          <path d="M16 2 A14 14 0 0 1 30 16" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M30 16 A14 14 0 0 1 16 30" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M16 30 A14 14 0 0 1 2 16" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="13" cy="16" r="4.5" fill="rgba(124,58,237,0.3)"/>
+          <circle cx="16" cy="13" r="4.5" fill="rgba(249,115,22,0.28)"/>
+          <circle cx="19" cy="16" r="4.5" fill="rgba(16,185,129,0.28)"/>
+          <line x1="16" y1="16" x2="16" y2="9.5" stroke="#09090B" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="16" y1="16" x2="21" y2="19" stroke="#09090B" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="16" cy="16" r="1.8" fill="#09090B"/>
+        </svg>
+        <span class="cover-logo-word">klockn</span>
+      </div>
+      <h1 class="cover-h">Market Research &<br/><span>Competitive Analysis</span></h1>
+      <p class="cover-sub">An assessment of the group scheduling, shared calendar, and AI booking market — and where Klockn fits within it.</p>
+    </div>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><strong>Date</strong>May 2026</div>
+      <div class="cover-meta-item"><strong>Classification</strong>Confidential</div>
+      <div class="cover-meta-item"><strong>Prepared for</strong>Co-founder review</div>
+      <div class="cover-meta-item"><strong>Contact</strong>hello@klockn.com</div>
+    </div>
+  </div>
+
+  <!-- ══ 1. EXECUTIVE SUMMARY ══ -->
+  <div class="section">
+    <div class="sec-num">01</div>
+    <h2 class="sec-h">Executive Summary</h2>
+    <p class="sec-sub">Klockn operates at the intersection of three large, fast-growing markets. No existing competitor combines all three core capabilities.</p>
+
+    <div class="summary-grid">
+      <div class="summary-box sb-purple">
+        <div class="sb-title">The gap is real</div>
+        <div class="sb-desc">No competitor combines group free/busy sharing, privacy-first design, and AI-powered end-to-end booking in a single product.</div>
+      </div>
+      <div class="summary-box sb-coral">
+        <div class="sb-title">Market is massive</div>
+        <div class="sb-desc">Combined addressable market across scheduling, events, and travel exceeds $500B. AI travel alone is growing at 8.4% CAGR.</div>
+      </div>
+      <div class="summary-box sb-green">
+        <div class="sb-title">B2B wedge is smart</div>
+        <div class="sb-desc">Corporate events solve the cold-start problem. One event organizer brings 50–100 consumer users in a single shot.</div>
+      </div>
+      <div class="summary-box sb-amber">
+        <div class="sb-title">3 risks to manage</div>
+        <div class="sb-desc">Sunrise precedent, thin booking commissions at early scale, and group cold-start — all solvable with the right strategy.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 2. MARKET SIZE ══ -->
+  <div class="section page-break">
+    <div class="sec-num">02</div>
+    <h2 class="sec-h">Market Size</h2>
+    <p class="sec-sub">Klockn sits across four markets simultaneously. Even capturing a small slice of each represents a large business.</p>
+
+    <div class="market-grid">
+      <div class="market-box">
+        <div class="mb-size">$12.1B</div>
+        <div class="mb-label">Calendar & Scheduling Software by 2033</div>
+        <div class="mb-growth">↑ 11.8% CAGR from $5.5B (2024)</div>
+      </div>
+      <div class="market-box">
+        <div class="mb-size">$14.7B</div>
+        <div class="mb-label">Event Management Software by 2034</div>
+        <div class="mb-growth">↑ 7.9% CAGR from $7.2B (2025)</div>
+      </div>
+      <div class="market-box">
+        <div class="mb-size">$464.9B</div>
+        <div class="mb-label">Travel Agency Services (2025)</div>
+        <div class="mb-growth">↑ 7.6% YoY growth</div>
+      </div>
+      <div class="market-box">
+        <div class="mb-size">$1.1B</div>
+        <div class="mb-label">AI Travel Assistant Market by 2030</div>
+        <div class="mb-growth">↑ 8.44% CAGR from $756M (2025)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 3. COMPETITIVE LANDSCAPE ══ -->
+  <div class="section">
+    <div class="sec-num">03</div>
+    <h2 class="sec-h">Competitive Landscape</h2>
+    <p class="sec-sub">No single competitor covers all three pillars: group availability sharing, privacy, and booking orchestration.</p>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Group Avail.</th>
+          <th>Privacy-First</th>
+          <th>AI Booking</th>
+          <th>B2B Model</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="td-name">Doodle</div><div class="td-cat">Group Scheduling</div></td>
+          <td>Poll-based scheduling</td>
+          <td><span class="gap-badge gap-partial">Partial</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">When2meet</div><div class="td-cat">Group Scheduling</div></td>
+          <td>Free time grid</td>
+          <td><span class="gap-badge gap-partial">Partial</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">Calendly</div><div class="td-cat">1:1 Scheduling</div></td>
+          <td>Booking links</td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">TimeTree</div><div class="td-cat">Shared Calendar</div></td>
+          <td>Family/couple calendar</td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">Reclaim.ai</div><div class="td-cat">AI Scheduling</div></td>
+          <td>AI calendar defence</td>
+          <td><span class="gap-badge gap-partial">Limited</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">Google Calendar</div><div class="td-cat">Daily Calendar</div></td>
+          <td>Personal calendar</td>
+          <td><span class="gap-badge gap-partial">Buried</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">Booking.com</div><div class="td-cat">Travel Booking</div></td>
+          <td>Travel booking + AI</td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-partial">Partial</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">Mindtrip</div><div class="td-cat">AI Travel</div></td>
+          <td>AI trip planning</td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-partial">Partial</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+        </tr>
+        <tr>
+          <td><div class="td-name">OurCal / Proton</div><div class="td-cat">Privacy Calendar</div></td>
+          <td>E2E encrypted calendar</td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+          <td><span class="gap-badge gap-no">No</span></td>
+        </tr>
+        <tr style="background:rgba(124,58,237,0.04)">
+          <td><div class="td-name" style="color:#7C3AED">Klockn ✦</div><div class="td-cat">Our product</div></td>
+          <td>Group availability + AI booking</td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+          <td><span class="gap-badge gap-yes">Yes</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ 4. MARKET GAPS ══ -->
+  <div class="section page-break">
+    <div class="sec-num">04</div>
+    <h2 class="sec-h">Market Gaps</h2>
+    <p class="sec-sub">Five unmet needs that Klockn addresses — none of which any single competitor solves today.</p>
+
+    <div class="gap-row">
+      <div class="gap-num">1</div>
+      <div>
+        <div class="gap-title">Privacy + Booking — nobody combines these</div>
+        <div class="gap-desc">Privacy calendars (OurCal, Proton, Tuta) have zero booking features. Booking platforms (Calendly, Booking.com) have zero privacy controls. The combination is completely unoccupied.</div>
+        <div class="gap-klockn">Klockn owns this space</div>
+      </div>
+    </div>
+
+    <div class="gap-row">
+      <div class="gap-num">2</div>
+      <div>
+        <div class="gap-title">Group travel coordination — completely unaddressed</div>
+        <div class="gap-desc">No platform handles "family wants to book a vacation together" end-to-end. Individual AI assistants assume one person drives all decisions. 56% of group travel operators cite manual coordination as a growing pain point. Group travel AI penetration is near zero.</div>
+        <div class="gap-klockn">Klockn's highest-intent use case</div>
+      </div>
+    </div>
+
+    <div class="gap-row">
+      <div class="gap-num">3</div>
+      <div>
+        <div class="gap-title">B2B-to-consumer wedge — no one has done this for scheduling</div>
+        <div class="gap-desc">All scheduling apps sell to individuals or admins directly. No product uses corporate events as a consumer distribution channel. Klockn's 2% ticket revenue model pays for user acquisition while building a consumer base organically.</div>
+        <div class="gap-klockn">Klockn's structural distribution advantage</div>
+      </div>
+    </div>
+
+    <div class="gap-row">
+      <div class="gap-num">4</div>
+      <div>
+        <div class="gap-title">Named groups with per-group privacy — missing everywhere</div>
+        <div class="gap-desc">Google Workspace has free/busy sharing but it's a B2B back-office feature, not consumer-friendly. TimeTree shows event details by default. Notion Calendar has availability sharing but it's 1:1 only. Nobody has "Family", "Work Crew", "College Friends" with independent privacy levels per group.</div>
+        <div class="gap-klockn">Core Klockn product feature</div>
+      </div>
+    </div>
+
+    <div class="gap-row">
+      <div class="gap-num">5</div>
+      <div>
+        <div class="gap-title">Proactive AI group notifications — reactive tools dominate</div>
+        <div class="gap-desc">Calendly, Doodle, and Reclaim are all reactive — a human initiates. Nobody pushes "The whole family is free Friday at 6pm — want to plan something?" 60% of travellers want AI assistants; agentic AI in travel only reached real infrastructure in early 2026.</div>
+        <div class="gap-klockn">Klockn's core AI differentiator</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 5. PMF ASSESSMENT ══ -->
+  <div class="section">
+    <div class="sec-num">05</div>
+    <h2 class="sec-h">Product-Market Fit Assessment</h2>
+    <p class="sec-sub">Segmented PMF analysis across Klockn's three target user types.</p>
+
+    <div class="pmf-box">
+      <div class="pmf-title">Overall Verdict</div>
+      <div class="pmf-verdict">Conditional Strong — PMF likely achievable</div>
+      <p style="font-size:15px;color:rgba(255,255,255,0.5);line-height:1.7;max-width:600px">Strong PMF if B2B wedge gains traction first and group travel is the primary consumer use case. Weaker PMF if consumer-first without a network or if relying solely on booking commissions for revenue.</p>
+      <div class="pmf-grid">
+        <div class="pmf-item pmf-green">
+          <div class="pmf-item-title">Strengths</div>
+          <div class="pmf-item-desc">Massive combined TAM · Relatable killer use case · Privacy differentiation is real · AI travel timing is perfect · B2B wedge solves cold start · Booking commission model is proven at scale</div>
+        </div>
+        <div class="pmf-item pmf-red">
+          <div class="pmf-item-title">Watch Points</div>
+          <div class="pmf-item-desc">Calendar monetisation is notoriously hard (Sunrise precedent) · Booking commissions need significant scale · Cold start without network effects · Must build scheduling + privacy + AI + booking simultaneously</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 6. RISKS ══ -->
+  <div class="section page-break">
+    <div class="sec-num">06</div>
+    <h2 class="sec-h">3 Biggest Risks</h2>
+    <p class="sec-sub">Known risks and how to mitigate each one.</p>
+
+    <div class="risk-card risk-1">
+      <div class="risk-label">Risk 01 — High</div>
+      <div class="risk-title">The Sunrise Calendar Precedent</div>
+      <div class="risk-desc">Microsoft acquired Sunrise Calendar for $100M and shut it down. Users won't pay for calendar features when Google and Apple give them free. Consumer calendar apps have low willingness to pay and high CAC.</div>
+      <div class="risk-fix">✦ Mitigation: <span>Monetise through bookings and B2B events — not the calendar itself. The calendar is the hook; the booking is the revenue.</span></div>
+    </div>
+
+    <div class="risk-card risk-2">
+      <div class="risk-label">Risk 02 — Medium</div>
+      <div class="risk-title">Booking Commissions Need Scale to Matter</div>
+      <div class="risk-desc">Hotel commissions: 10–15%. Flights: near zero. Restaurants: 15–30% but margins are thin. At 2% average blended commission, you need $100M+ GMV to generate $2M revenue. Early users won't generate enough booking volume.</div>
+      <div class="risk-fix">✦ Mitigation: <span>Add a premium subscription tier (e.g. $5/mo) alongside commissions from day one. Don't rely on one revenue stream at early stage.</span></div>
+    </div>
+
+    <div class="risk-card risk-3">
+      <div class="risk-label">Risk 03 — Medium</div>
+      <div class="risk-title">Cold Start and Network Effects</div>
+      <div class="risk-desc">Group apps are useless without your group on them. Doodle solved this by requiring zero signup. Klockn requires signup + groups + calendar connection — much higher friction. First users experience no network effects.</div>
+      <div class="risk-fix">✦ Mitigation: <span>Lead with B2B corporate events (each organiser brings 50–100 users). Add a no-signup "one-time event" mode like Doodle to reduce friction for first use.</span></div>
+    </div>
+  </div>
+
+  <!-- ══ 7. STRATEGIC RECOMMENDATIONS ══ -->
+  <div class="section">
+    <div class="sec-num">07</div>
+    <h2 class="sec-h">Strategic Recommendations</h2>
+    <p class="sec-sub">What Klockn should double down on, and what to avoid.</p>
+
+    <div style="margin-bottom:32px">
+      <p style="font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:16px">Double down on</p>
+      <div class="rec-row">
+        <div class="rec-ico" style="background:rgba(124,58,237,0.08);font-size:13px;font-weight:800;color:#7C3AED;">01</div>
+        <div><div class="rec-t">B2B corporate events first</div><div class="rec-d">Solves cold start, generates 2% ticket revenue, brings consumer users in batches of 50–100. This is the single most important strategic decision.</div></div>
+      </div>
+      <div class="rec-row">
+        <div class="rec-ico" style="background:rgba(249,115,22,0.08);font-size:13px;font-weight:800;color:#F97316;">02</div>
+        <div><div class="rec-t">Group travel specifically — not generic group coordination</div><div class="rec-d">Group travel = high booking intent = real commissions. Generic "coordinate when to meet" = low intent = no revenue. Focus the AI booking on travel first.</div></div>
+      </div>
+      <div class="rec-row">
+        <div class="rec-ico" style="background:rgba(16,185,129,0.08);font-size:13px;font-weight:800;color:#10B981;">03</div>
+        <div><div class="rec-t">Own the privacy angle</div><div class="rec-d">"Free/busy only — never what you're doing" is unoccupied by any well-funded competitor. Make it central to every marketing message, not a footnote.</div></div>
+      </div>
+    </div>
+
+    <div>
+      <p style="font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:16px">Avoid</p>
+      <div class="rec-row">
+        <div class="rec-ico" style="background:#FEF2F2;font-size:13px;font-weight:800;color:#DC2626;">—</div>
+        <div><div class="rec-t">Competing with Doodle on free scheduling</div><div class="rec-d">Doodle is 25 years old and free. You won't win on free group scheduling. Win on booking and privacy — things Doodle doesn't touch.</div></div>
+      </div>
+      <div class="rec-row">
+        <div class="rec-ico" style="background:#FEF2F2;font-size:13px;font-weight:800;color:#DC2626;">—</div>
+        <div><div class="rec-t">100% reliance on booking commissions at early stage</div><div class="rec-d">Volume won't be there in year one. Launch with a premium subscription tier alongside commissions so there's revenue even before booking scale.</div></div>
+      </div>
+      <div class="rec-row">
+        <div class="rec-ico" style="background:#FEF2F2;font-size:13px;font-weight:800;color:#DC2626;">—</div>
+        <div><div class="rec-t">Going too broad too fast</div><div class="rec-d">Consumer + B2B + booking + AI is 4 hard problems. Sequence them: B2B wedge → consumer via attendees → booking commissions → premium subscription.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="doc-footer">
+    <span>© 2026 Klockn — Confidential. Not for distribution.</span>
+    <span>hello@klockn.com · klockn.com</span>
+    <span>Prepared May 2026</span>
+  </div>
+
+</div>
+
+<script>
+// Auto-trigger print dialog hint
+document.querySelector('.print-btn').addEventListener('click', () => window.print())
+</script>
+</body>
+</html>

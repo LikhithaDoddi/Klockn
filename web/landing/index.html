@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Klockn — Finally, a time that works for everyone.</title>
+  <meta name="description" content="Klockn finds the perfect moment when everyone is free — then books everything. Hotels, tickets, cabs, stays. All in one conversation."/>
+  <meta property="og:title"       content="Klockn — Finally, a time that works for everyone."/>
+  <meta property="og:description" content="Share your calendar. Let AI find the moment. Book everything."/>
+  <meta property="og:image"       content="https://klockn.com/og-image.svg"/>
+  <meta property="og:url"         content="https://klockn.com"/>
+  <meta property="og:type"        content="website"/>
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:title"       content="Klockn — Finally, a time that works for everyone."/>
+  <meta name="twitter:description" content="Share your calendar. Let AI find the moment. Book everything."/>
+  <meta name="twitter:image"       content="https://klockn.com/og-image.svg"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="canonical" href="https://klockn.com"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,900&display=swap" rel="stylesheet"/>
+  <style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --ink:    #0A0A0F;
+    --white:  #FFFFFF;
+    --off:    #F7F6FF;
+    --purple: #7C3AED;
+    --violet: #A78BFA;
+    --coral:  #F97316;
+    --amber:  #FBBF24;
+    --green:  #10B981;
+    --red:    #EF4444;
+    --warm:   #FFF7ED;
+  }
+  html { scroll-behavior:smooth; }
+  body { font-family:'Inter',sans-serif; background:#fff; color:var(--ink); overflow-x:hidden; }
+
+  /* ── NAV ── */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:200;
+    padding:18px 48px;
+    display:flex; align-items:center; justify-content:space-between;
+    transition:all 0.4s;
+  }
+  nav.scrolled {
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(20px);
+    border-bottom:1px solid rgba(0,0,0,0.06);
+    box-shadow:0 1px 20px rgba(0,0,0,0.04);
+  }
+  .logo { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink); }
+  .logo-word { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+  .nav-right { display:flex; align-items:center; gap:12px; }
+  .nav-a { font-size:14px; font-weight:500; color:#666; text-decoration:none; transition:color 0.2s; }
+  .nav-a:hover { color:var(--ink); }
+  .btn {
+    display:inline-flex; align-items:center; padding:10px 22px;
+    border-radius:100px; font-size:14px; font-weight:600;
+    cursor:pointer; text-decoration:none; border:none;
+    font-family:'Inter',sans-serif; transition:all 0.22s;
+  }
+  .btn-ink { background:var(--ink); color:#fff; }
+  .btn-ink:hover { background:#1a1a2e; transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,0.2); }
+  .btn-outline { background:transparent; color:var(--ink); border:1.5px solid rgba(0,0,0,0.15); }
+  .btn-outline:hover { border-color:rgba(0,0,0,0.4); }
+  .btn-purple { background:var(--purple); color:#fff; }
+  .btn-purple:hover { background:#6D28D9; transform:translateY(-1px); box-shadow:0 10px 30px rgba(124,58,237,0.4); }
+  .btn-xl { padding:16px 36px; font-size:16px; border-radius:14px; }
+
+  /* ════════════════════════════
+     § 1  HERO — LIGHT
+  ════════════════════════════ */
+  #hero {
+    min-height:100vh;
+    background:var(--white);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    align-items:center;
+    gap:0;
+    padding:120px 48px 80px;
+    position:relative; overflow:hidden;
+  }
+  /* Subtle grid lines in background */
+  #hero::before {
+    content:'';
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(0,0,0,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.025) 1px, transparent 1px);
+    background-size:60px 60px;
+    pointer-events:none;
+  }
+  /* Purple corner glow */
+  #hero::after {
+    content:'';
+    position:absolute; top:-200px; right:-200px;
+    width:600px; height:600px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 65%);
+    pointer-events:none;
+    animation:heroGlow 8s ease-in-out infinite;
+  }
+  @keyframes heroGlow { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+  .hero-left { position:relative; z-index:1; }
+
+  .hero-tag {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(124,58,237,0.07);
+    border:1px solid rgba(124,58,237,0.18);
+    color:var(--purple); font-size:12px; font-weight:600;
+    padding:6px 14px; border-radius:100px; margin-bottom:32px;
+    opacity:0; animation:slideUp 0.6s 0.1s forwards;
+  }
+  .tag-pulse { width:6px; height:6px; border-radius:50%; background:var(--purple); animation:blink 1.8s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .hero-h1 {
+    font-size:clamp(48px,5.5vw,76px);
+    font-weight:900; line-height:1.0; letter-spacing:-3px;
+    margin-bottom:24px;
+  }
+  .hero-h1 .line { display:block; overflow:hidden; }
+  .hero-h1 .line-inner {
+    display:block;
+    opacity:0; transform:translateY(100%);
+    animation:lineReveal 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .hero-h1 .l1 .line-inner { animation-delay:0.2s; }
+  .hero-h1 .l2 .line-inner { animation-delay:0.35s; }
+  .hero-h1 .l3 .line-inner { animation-delay:0.5s; }
+  @keyframes lineReveal { to{opacity:1; transform:translateY(0)} }
+
+  .grad-text {
+    background:linear-gradient(135deg, var(--purple) 0%, var(--coral) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+
+  .hero-sub {
+    font-size:18px; color:#666; line-height:1.7; max-width:420px; margin-bottom:40px;
+    opacity:0; animation:slideUp 0.7s 0.7s forwards;
+  }
+  .hero-btns {
+    display:flex; gap:12px; flex-wrap:wrap;
+    opacity:0; animation:slideUp 0.7s 0.9s forwards;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Phone hero visual ── */
+  .hero-right {
+    position:relative; z-index:1;
+    display:flex; justify-content:center; align-items:center;
+    opacity:0; animation:phoneEntrance 1s 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  @keyframes phoneEntrance {
+    from{opacity:0; transform:translateY(40px) scale(0.94)}
+    to  {opacity:1; transform:translateY(0)   scale(1)}
+  }
+
+  .phone-stage { position:relative; width:300px; }
+
+  /* Floating notification cards */
+  .notif {
+    position:absolute;
+    background:#fff;
+    border-radius:16px;
+    padding:12px 16px;
+    box-shadow:0 8px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
+    font-size:12px; font-weight:500;
+    display:flex; align-items:center; gap:10px;
+    white-space:nowrap; z-index:10;
+  }
+  .notif-icon { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .notif-title { font-size:11px; font-weight:700; color:var(--ink); }
+  .notif-sub   { font-size:10px; color:#888; margin-top:1px; }
+
+  .notif-1 {
+    top:-24px; right:-40px;
+    animation:floatA 5s ease-in-out infinite;
+  }
+  .notif-2 {
+    bottom:40px; left:-48px;
+    animation:floatB 6s ease-in-out infinite;
+  }
+  .notif-3 {
+    bottom:-20px; right:-20px;
+    animation:floatA 7s ease-in-out infinite 1s;
+  }
+  @keyframes floatA { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  @keyframes floatB { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
+
+  /* The phone itself */
+  .hero-phone {
+    width:270px; height:540px;
+    background:var(--ink);
+    border-radius:44px;
+    border:2px solid rgba(255,255,255,0.1);
+    box-shadow:
+      0 60px 120px rgba(0,0,0,0.25),
+      0 20px 40px rgba(0,0,0,0.15),
+      0 0 0 8px rgba(0,0,0,0.04);
+    overflow:hidden; position:relative;
+    margin:0 auto;
+  }
+  .phone-screen {
+    position:absolute; inset:0;
+    background:linear-gradient(160deg, #0e0e18 0%, #140a28 100%);
+    display:flex; flex-direction:column;
+    padding:0;
+  }
+  /* Status bar */
+  .ps-bar {
+    padding:14px 20px 6px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .ps-time { font-size:13px; font-weight:700; color:#fff; }
+  .ps-icons { font-size:12px; color:rgba(255,255,255,0.6); letter-spacing:2px; }
+  /* App header */
+  .ps-header {
+    padding:10px 20px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .ps-logo {
+    font-size:16px; font-weight:800; color:#fff; letter-spacing:-0.5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .ps-group-pill {
+    background:rgba(124,58,237,0.25);
+    border:1px solid rgba(124,58,237,0.3);
+    color:var(--violet); font-size:11px; font-weight:600;
+    padding:4px 12px; border-radius:100px;
+  }
+  /* Group members */
+  .ps-section { padding:0 20px 12px; }
+  .ps-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.25); margin-bottom:10px; }
+  .ps-member {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:8px;
+  }
+  .ps-av {
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff; flex-shrink:0;
+  }
+  .ps-mname { font-size:13px; font-weight:600; color:#fff; flex:1; }
+  .ps-avail {
+    height:16px; flex:2; border-radius:4px;
+    background:rgba(255,255,255,0.05); position:relative; overflow:hidden;
+  }
+  .ps-avail-fill { position:absolute; inset-block:0; border-radius:4px; }
+  .ps-chip {
+    font-size:10px; font-weight:600; padding:3px 9px; border-radius:100px; flex-shrink:0;
+  }
+  .chip-g { background:rgba(16,185,129,0.18); color:#34D399; border:1px solid rgba(16,185,129,0.3); }
+  .chip-r { background:rgba(239,68,68,0.12); color:#F87171; border:1px solid rgba(239,68,68,0.25); }
+  /* AI card on phone */
+  .ps-ai {
+    margin:4px 16px 0;
+    background:linear-gradient(135deg, rgba(124,58,237,0.2), rgba(249,115,22,0.1));
+    border:1px solid rgba(124,58,237,0.3);
+    border-radius:16px; padding:14px 16px;
+  }
+  .ps-ai-header {
+    display:flex; align-items:center; gap:6px; margin-bottom:8px;
+  }
+  .ps-ai-dot { width:6px; height:6px; border-radius:50%; background:var(--violet); animation:blink 2s infinite; }
+  .ps-ai-name { font-size:10px; font-weight:700; color:var(--violet); letter-spacing:1px; text-transform:uppercase; }
+  .ps-ai-text { font-size:12px; color:rgba(255,255,255,0.8); line-height:1.5; }
+  .ps-ai-text strong { color:#fff; }
+  /* Bottom buttons */
+  .ps-actions {
+    display:flex; gap:8px; padding:12px 16px 0;
+  }
+  .ps-btn {
+    flex:1; padding:10px; border-radius:12px; font-size:12px;
+    font-weight:700; text-align:center; cursor:pointer;
+  }
+  .ps-btn-yes {
+    background:var(--purple); color:#fff;
+    box-shadow:0 4px 16px rgba(124,58,237,0.4);
+    animation:yesGlow 2s ease-in-out infinite;
+  }
+  @keyframes yesGlow { 0%,100%{box-shadow:0 4px 16px rgba(124,58,237,0.4)} 50%{box-shadow:0 4px 28px rgba(124,58,237,0.7)} }
+  .ps-btn-no  { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.08); }
+
+  /* ════════════════════════════
+     § TICKER
+  ════════════════════════════ */
+  .ticker {
+    background:var(--ink);
+    padding:20px 0; overflow:hidden;
+    border-top:1px solid rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(255,255,255,0.04);
+  }
+  .ticker-track {
+    display:flex; gap:0;
+    animation:tickerRoll 28s linear infinite;
+    white-space:nowrap;
+  }
+  .ticker-track:hover { animation-play-state:paused; }
+  .ticker-item {
+    display:inline-flex; align-items:center; gap:16px;
+    font-size:14px; font-weight:600; color:rgba(255,255,255,0.35);
+    padding:0 32px; flex-shrink:0;
+  }
+  .ticker-item em { color:rgba(255,255,255,0.12); font-style:normal; }
+  @keyframes tickerRoll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* ════════════════════════════
+     § 2  HOW — WHITE CLEAN
+  ════════════════════════════ */
+  #how {
+    background:var(--white);
+    padding:120px 48px;
+    position:relative;
+  }
+  .how-inner { max-width:1100px; margin:0 auto; }
+  .section-ey {
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase;
+    margin-bottom:20px;
+  }
+  .ey-line { width:24px; height:2px; border-radius:2px; }
+  .big-h {
+    font-size:clamp(38px,5vw,64px);
+    font-weight:900; letter-spacing:-2.5px; line-height:1.05; margin-bottom:16px;
+  }
+  .sec-sub {
+    font-size:17px; line-height:1.7; max-width:460px;
+  }
+
+  /* Steps — Vercel-style numbered list */
+  .steps-v {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:1px; margin-top:72px;
+    border:1px solid rgba(0,0,0,0.07);
+    border-radius:24px; overflow:hidden;
+  }
+  .step {
+    padding:44px 40px; background:#fff;
+    position:relative; overflow:hidden;
+    opacity:0; transform:translateY(24px);
+    transition:all 0.6s cubic-bezier(0.16,1,0.3,1);
+  }
+  .step.in { opacity:1; transform:translateY(0); }
+  .step:hover { background:#FAFAFA; }
+  .step:nth-child(1) { border-right:1px solid rgba(0,0,0,0.07); border-bottom:1px solid rgba(0,0,0,0.07); }
+  .step:nth-child(2) { border-bottom:1px solid rgba(0,0,0,0.07); }
+  .step:nth-child(3) { border-right:1px solid rgba(0,0,0,0.07); }
+  /* Hover accent line */
+  .step::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; transform:scaleX(0); transform-origin:left; transition:transform 0.4s; }
+  .step:nth-child(1)::after { background:var(--purple); }
+  .step:nth-child(2)::after { background:var(--coral); }
+  .step:nth-child(3)::after { background:var(--green); }
+  .step:nth-child(4)::after { background:var(--amber); }
+  .step:hover::after { transform:scaleX(1); }
+
+  .step-n { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(0,0,0,0.2); margin-bottom:20px; }
+  .step-ico { font-size:36px; margin-bottom:18px; display:block; }
+  .step-t { font-size:22px; font-weight:800; letter-spacing:-0.5px; margin-bottom:10px; color:var(--ink); }
+  .step-d { font-size:14px; color:#666; line-height:1.7; }
+
+  /* ════════════════════════════
+     § 3  PRODUCT SPOTLIGHT — INK
+  ════════════════════════════ */
+  #product {
+    background:var(--ink);
+    padding:140px 48px;
+    position:relative; overflow:hidden;
+  }
+  /* Purple grid glow */
+  #product::before {
+    content:'';
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(124,58,237,0.14) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(249,115,22,0.06) 0%, transparent 50%);
+    pointer-events:none;
+  }
+  /* Animated top border */
+  #product::after {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--purple), var(--coral), var(--green), var(--purple));
+    background-size:400% 100%;
+    animation:borderFlow 5s linear infinite;
+  }
+  @keyframes borderFlow { 0%{background-position:0%} 100%{background-position:400%} }
+
+  .product-inner {
+    max-width:1100px; margin:0 auto;
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:100px; align-items:center;
+  }
+  .product-left {
+    opacity:0; transform:translateX(-40px);
+    transition:all 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+  .product-left.in { opacity:1; transform:translateX(0); }
+
+  /* Calendar animation — now in dark spotlight section */
+  .cal-row { display:flex; gap:12px; margin-top:48px; }
+  .cal-card {
+    flex:1; background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:16px; overflow:hidden;
+    transition:transform 0.3s, box-shadow 0.3s;
+  }
+  .cal-card:first-child  { transform:rotateY(5deg) translateX(-6px); }
+  .cal-card:last-child   { transform:rotateY(-5deg) translateX(6px); }
+  .cal-card:hover { transform:none; box-shadow:0 20px 40px rgba(0,0,0,0.4); }
+  .cc-head {
+    padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.06);
+    display:flex; align-items:center; gap:8px;
+  }
+  .cc-av {
+    width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#fff;
+  }
+  .cc-name { font-size:12px; font-weight:600; color:#fff; }
+  .cc-body { padding:8px 10px; display:flex; flex-direction:column; gap:4px; position:relative; }
+  .cc-slot {
+    height:24px; border-radius:6px; display:flex; align-items:center;
+    padding:0 8px; font-size:10px; font-weight:500;
+    transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .cc-t { color:rgba(255,255,255,0.25); font-size:9px; margin-right:6px; flex-shrink:0; }
+  .cc-slot.free { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); }
+  .cc-slot.busy { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:rgba(239,68,68,0.6); }
+  .cc-slot.match {
+    background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.5);
+    color:#34D399; font-weight:700; transform:scale(1.04);
+    box-shadow:0 0 20px rgba(16,185,129,0.2);
+  }
+  .scan-bar {
+    position:absolute; left:0; right:0; height:1.5px;
+    background:linear-gradient(90deg,transparent,var(--coral),var(--violet),transparent);
+    box-shadow:0 0 10px var(--purple); opacity:0;
+  }
+  .scan-bar.go { opacity:1; animation:scanGo 1.4s ease-in-out forwards; }
+  @keyframes scanGo { from{top:0} to{top:calc(100% - 2px)} }
+
+  /* AI match pill */
+  .match-pill {
+    display:inline-flex; align-items:center; gap:10px;
+    background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25);
+    padding:12px 20px; border-radius:12px; margin-top:20px;
+    font-size:13px; color:#34D399; font-weight:500;
+    opacity:0; transform:translateY(8px);
+    transition:all 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .match-pill.in { opacity:1; transform:translateY(0); }
+  .match-pill-ico { font-size:18px; animation:spinBounce 3s ease-in-out infinite; }
+  @keyframes spinBounce { 0%,100%{transform:scale(1) rotate(0)} 50%{transform:scale(1.2) rotate(15deg)} }
+
+  .product-right {
+    opacity:0; transform:translateX(40px);
+    transition:all 0.8s 0.15s cubic-bezier(0.16,1,0.3,1);
+  }
+  .product-right.in { opacity:1; transform:translateX(0); }
+
+  .feat-list { list-style:none; margin-top:44px; display:flex; flex-direction:column; gap:24px; }
+  .feat-item { display:flex; align-items:flex-start; gap:16px; }
+  .feat-ico {
+    width:44px; height:44px; border-radius:12px; flex-shrink:0; margin-top:2px;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+  }
+  .feat-t { font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .feat-d { font-size:14px; color:rgba(255,255,255,0.38); line-height:1.65; }
+
+  /* ════════════════════════════
+     § 4  FOR EVERYONE — WARM
+  ════════════════════════════ */
+  #everyone {
+    background:var(--warm);
+    padding:140px 48px;
+    position:relative; overflow:hidden;
+  }
+  #everyone::before {
+    content:'';
+    position:absolute; bottom:-100px; right:-100px;
+    width:500px; height:500px; border-radius:50%;
+    background:radial-gradient(circle, rgba(249,115,22,0.08), transparent 70%);
+    pointer-events:none;
+  }
+  .everyone-inner { max-width:1100px; margin:0 auto; }
+  .ev-header { max-width:520px; margin-bottom:72px; }
+
+  .cards-row {
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:20px;
+  }
+  .ev-card {
+    border-radius:28px; padding:40px 36px; position:relative; overflow:hidden;
+    cursor:pointer;
+    opacity:0; transform:translateY(48px) scale(0.95);
+    transition:all 0.7s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .ev-card.in { opacity:1; transform:translateY(0) scale(1); }
+  .ev-card:hover { transform:translateY(-8px) scale(1.01) !important; }
+  /* Decorative circle in corner */
+  .ev-card::before { content:''; position:absolute; width:180px; height:180px; border-radius:50%; top:-50px; right:-50px; background:rgba(255,255,255,0.1); pointer-events:none; }
+
+  .ev-c1 { background:linear-gradient(135deg,#7C3AED,#4C1D95); color:#fff; }
+  .ev-c2 { background:var(--ink); color:#fff; }
+  .ev-c3 { background:linear-gradient(135deg,#F97316,#C2410C); color:#fff; }
+
+  .ev-emoji { display:block; margin-bottom:22px; line-height:1; }
+  .ev-title { font-size:24px; font-weight:900; letter-spacing:-0.5px; margin-bottom:12px; }
+  .ev-desc  { font-size:14px; line-height:1.7; opacity:0.72; }
+  .ev-tags  { display:flex; flex-wrap:wrap; gap:7px; margin-top:22px; }
+  .ev-tag   { font-size:11px; font-weight:600; padding:4px 12px; border-radius:100px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.15); }
+
+  /* ════════════════════════════
+     § 5  BOOKING — WHITE
+  ════════════════════════════ */
+  #booking {
+    background:var(--white);
+    padding:140px 48px;
+    position:relative;
+  }
+  .booking-inner { max-width:1100px; margin:0 auto; }
+  .booking-top {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:80px; align-items:start; margin-bottom:72px;
+  }
+
+  .book-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:48px;
+  }
+  .book-item {
+    padding:24px 20px; border-radius:18px; text-align:center;
+    border:1.5px solid rgba(0,0,0,0.07); cursor:pointer;
+    opacity:0; transform:translateY(24px) scale(0.96);
+    transition:all 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .book-item.in { opacity:1; transform:translateY(0) scale(1); }
+  .book-item:hover {
+    border-color:var(--purple);
+    background:rgba(124,58,237,0.03);
+    transform:translateY(-4px) scale(1.02) !important;
+    box-shadow:0 8px 30px rgba(124,58,237,0.1);
+  }
+  .book-em { display:flex; justify-content:center; margin-bottom:10px; }
+  .book-n  { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:3px; }
+  .book-s  { font-size:11px; color:#999; }
+
+  /* Chat on right */
+  .chat-panel {
+    opacity:0; transform:translateY(30px);
+    transition:all 0.7s 0.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  .chat-panel.in { opacity:1; transform:translateY(0); }
+  .chat-box {
+    border:1.5px solid rgba(0,0,0,0.07);
+    border-radius:24px; overflow:hidden;
+    box-shadow:0 4px 40px rgba(0,0,0,0.06);
+  }
+  .chat-top {
+    padding:16px 20px; background:var(--ink);
+    display:flex; align-items:center; gap:10px;
+  }
+  .chat-dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation:blink 2s infinite; }
+  .chat-n { font-size:14px; font-weight:700; color:#fff; }
+  .chat-sub { font-size:12px; color:rgba(255,255,255,0.35); margin-left:auto; }
+  .chat-body { padding:20px; display:flex; flex-direction:column; gap:10px; background:#fff; }
+  .cm {
+    max-width:86%; padding:10px 14px; border-radius:18px;
+    font-size:13px; line-height:1.55;
+    opacity:0; transform:translateY(6px);
+    transition:opacity 0.4s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .cm.in { opacity:1; transform:translateY(0); }
+  .cm.ai   { background:#F3F4F6; color:var(--ink); border-radius:4px 18px 18px 18px; align-self:flex-start; }
+  .cm.user { background:var(--purple); color:#fff; border-radius:18px 4px 18px 18px; align-self:flex-end; }
+  .cm.done {
+    background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25);
+    color:#047857; border-radius:12px; align-self:stretch; max-width:100%;
+    text-align:center; font-weight:600;
+  }
+
+  /* ════════════════════════════
+     § 6  PRIVACY — BOLD INK
+  ════════════════════════════ */
+  #privacy {
+    background:var(--ink);
+    padding:140px 48px;
+    position:relative; overflow:hidden;
+  }
+  #privacy::before {
+    content:'PRIVATE';
+    position:absolute; bottom:-40px; right:-20px;
+    font-size:clamp(80px,18vw,200px); font-weight:900; letter-spacing:-5px;
+    color:rgba(255,255,255,0.02); pointer-events:none; user-select:none;
+  }
+  .priv-inner {
+    max-width:1100px; margin:0 auto;
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:100px; align-items:center;
+  }
+  .priv-left {
+    opacity:0; transform:translateY(40px);
+    transition:all 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+  .priv-left.in { opacity:1; transform:translateY(0); }
+  .priv-feats { margin-top:48px; display:flex; flex-direction:column; gap:28px; }
+  .pf { display:flex; align-items:flex-start; gap:16px; }
+  .pf-ico {
+    width:44px; height:44px; border-radius:12px; flex-shrink:0; margin-top:2px;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+  }
+  .pf-t { font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .pf-d { font-size:14px; color:rgba(255,255,255,0.35); line-height:1.65; }
+
+  .priv-right {
+    opacity:0; transform:translateX(40px);
+    transition:all 0.8s 0.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  .priv-right.in { opacity:1; transform:translateX(0); }
+
+  /* Privacy visual — stripped-down phone */
+  .priv-phone {
+    width:260px; height:480px; margin:0 auto;
+    background:#0d0d14; border-radius:36px;
+    border:1.5px solid rgba(255,255,255,0.07);
+    box-shadow:0 50px 100px rgba(0,0,0,0.5), 0 0 0 6px rgba(255,255,255,0.02) inset;
+    padding:24px 18px; display:flex; flex-direction:column; gap:10px;
+    position:relative;
+  }
+  .priv-phone::before {
+    content:''; position:absolute;
+    inset:0; border-radius:36px;
+    background:radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.1), transparent 55%);
+    pointer-events:none;
+  }
+  .pp-notch { width:70px; height:5px; background:rgba(255,255,255,0.07); border-radius:3px; margin:0 auto 12px; }
+  .pp-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.2); }
+  .pp-row { display:flex; align-items:center; gap:8px; }
+  .pp-av { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; }
+  .pp-name { font-size:12px; font-weight:600; color:rgba(255,255,255,0.8); flex:1; }
+  .pp-bar { flex:2; height:16px; border-radius:4px; background:rgba(255,255,255,0.04); position:relative; overflow:hidden; }
+  .pp-fill { position:absolute; inset-block:0; border-radius:4px; }
+  .pp-chip { font-size:10px; font-weight:600; padding:2px 8px; border-radius:100px; flex-shrink:0; }
+  .pp-div { height:1px; background:rgba(255,255,255,0.04); }
+  .pp-block {
+    background:rgba(124,58,237,0.1); border:1px solid rgba(124,58,237,0.2);
+    border-radius:10px 10px 10px 3px; padding:10px 12px;
+    font-size:11px; color:rgba(255,255,255,0.7); line-height:1.5;
+  }
+  .pp-block b { display:block; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; color:var(--violet); margin-bottom:4px; }
+
+  /* ════════════════════════════
+     § 7  WAITLIST — GRADIENT
+  ════════════════════════════ */
+  #waitlist {
+    background:linear-gradient(135deg, #3B0764 0%, #1e0a3c 40%, #0a0510 100%);
+    padding:160px 48px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  /* Animated gradient orbs */
+  #waitlist::before {
+    content:''; position:absolute; top:-100px; left:50%;
+    transform:translateX(-50%);
+    width:700px; height:700px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,58,237,0.2), transparent 60%);
+    animation:wlOrb 8s ease-in-out infinite;
+  }
+  #waitlist::after {
+    content:''; position:absolute; bottom:-100px; right:10%;
+    width:400px; height:400px; border-radius:50%;
+    background:radial-gradient(circle, rgba(249,115,22,0.1), transparent 60%);
+    animation:wlOrb 10s ease-in-out infinite reverse;
+  }
+  @keyframes wlOrb { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) scale(1.15)} }
+
+  .wl-inner { position:relative; z-index:1; max-width:580px; margin:0 auto; }
+  .wl-h {
+    font-size:clamp(48px,7vw,80px);
+    font-weight:900; letter-spacing:-3px; line-height:1.0;
+    color:#fff; margin-bottom:20px;
+  }
+  .wl-h span {
+    background:linear-gradient(135deg,#C4B5FD,#F97316);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .wl-sub { font-size:18px; color:rgba(255,255,255,0.45); line-height:1.7; margin-bottom:52px; }
+  .wl-form { display:flex; flex-direction:column; gap:10px; max-width:420px; margin:0 auto 14px; }
+  .wl-inp {
+    background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px; padding:15px 22px;
+    color:#fff; font-family:'Inter',sans-serif; font-size:15px; outline:none;
+    transition:all 0.25s;
+  }
+  .wl-inp::placeholder { color:rgba(255,255,255,0.25); }
+  .wl-inp:focus { border-color:rgba(167,139,250,0.6); background:rgba(124,58,237,0.1); box-shadow:0 0 0 4px rgba(124,58,237,0.12); }
+  .wl-btn {
+    padding:16px; font-size:16px; font-weight:800;
+    background:linear-gradient(135deg,#A78BFA,#7C3AED);
+    color:#fff; border:none; border-radius:14px; cursor:pointer;
+    font-family:'Inter',sans-serif; transition:all 0.25s; position:relative; overflow:hidden;
+  }
+  .wl-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,transparent,rgba(255,255,255,0.12),transparent); transform:translateX(-100%); transition:transform 0.5s; }
+  .wl-btn:hover::after { transform:translateX(100%); }
+  .wl-btn:hover { transform:translateY(-2px); box-shadow:0 16px 44px rgba(124,58,237,0.55); }
+  .wl-note { font-size:12px; color:rgba(255,255,255,0.2); }
+  .wl-ok {
+    display:none; align-items:center; justify-content:center; gap:10px;
+    background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3);
+    border-radius:14px; padding:18px; color:#34D399; font-weight:700; font-size:15px;
+    max-width:420px; margin:0 auto;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background:var(--ink); padding:36px 48px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:16px;
+    border-top:1px solid rgba(255,255,255,0.05);
+  }
+  .f-logo { font-size:16px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; }
+  .f-links { display:flex; gap:24px; flex-wrap:wrap; }
+  .f-links a { font-size:13px; color:rgba(255,255,255,0.3); text-decoration:none; transition:color 0.2s; }
+  .f-links a:hover { color:#fff; }
+  .f-c { font-size:12px; color:rgba(255,255,255,0.18); }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:960px) {
+    #hero { grid-template-columns:1fr; padding:100px 24px 60px; text-align:center; }
+    .hero-btns { justify-content:center; }
+    .hero-right { margin-top:48px; }
+    .hero-h1 { font-size:clamp(40px,10vw,60px); }
+    .steps-v { grid-template-columns:1fr; }
+    .step:nth-child(odd) { border-right:none; }
+    .product-inner,.priv-inner,.booking-top { grid-template-columns:1fr; gap:60px; }
+    .cards-row { grid-template-columns:1fr; }
+    #how,#product,#everyone,#booking,#privacy,#waitlist { padding:80px 24px; }
+    nav { padding:16px 20px; }
+    .nav-a { display:none; }
+    .notif-1,.notif-2,.notif-3 { display:none; }
+    footer { flex-direction:column; text-align:center; padding:28px 20px; }
+  }
+  @media(max-width:600px) {
+    .book-grid { grid-template-columns:repeat(2,1fr); }
+  }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="/" class="logo">
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="14" stroke="rgba(124,58,237,0.35)" stroke-width="1.5"/>
+      <path d="M16 2 A14 14 0 0 1 30 16" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M30 16 A14 14 0 0 1 16 30" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M16 30 A14 14 0 0 1 2 16" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="13" cy="16" r="4.5" fill="rgba(124,58,237,0.3)"/>
+      <circle cx="16" cy="13" r="4.5" fill="rgba(249,115,22,0.28)"/>
+      <circle cx="19" cy="16" r="4.5" fill="rgba(16,185,129,0.28)"/>
+      <line x1="16" y1="16" x2="16" y2="9.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="16" y1="16" x2="21" y2="19" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+      <circle cx="16" cy="16" r="1.8" fill="white"/>
+    </svg>
+    <span class="logo-word">klockn</span>
+  </a>
+  <div class="nav-right">
+    <a href="#how"      class="nav-a">How it works</a>
+    <a href="#everyone" class="nav-a">Who it's for</a>
+    <a href="login.html" class="btn btn-outline" style="padding:8px 18px;font-size:13px">Organizer login</a>
+    <a href="#waitlist" class="btn btn-ink"     style="padding:8px 18px;font-size:13px">Get early access</a>
+  </div>
+</nav>
+
+<!-- ════ § 1  HERO ════ -->
+<section id="hero">
+  <div class="hero-left">
+    <div class="hero-tag"><div class="tag-pulse"></div> Now in early access</div>
+    <h1 class="hero-h1">
+      <span class="line l1"><span class="line-inner">Finally, a time</span></span>
+      <span class="line l2"><span class="line-inner">that works for</span></span>
+      <span class="line l3"><span class="line-inner grad-text">everyone.</span></span>
+    </h1>
+    <p class="hero-sub">Share your calendar with the people you love. Klockn's AI spots when everyone's free and handles the whole thing — from the idea to the booking.</p>
+    <div class="hero-btns">
+      <a href="#waitlist" class="btn btn-purple btn-xl">Get early access →</a>
+      <a href="#how"      class="btn btn-outline btn-xl">See how it works</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="phone-stage">
+
+      <!-- Floating notification cards -->
+      <div class="notif notif-1">
+        <div class="notif-icon" style="background:rgba(16,185,129,0.12)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#10B981" stroke-width="1.5"/><path d="M5.5 9 L7.5 11 L12.5 6.5" stroke="#10B981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div class="notif-title">Everyone's free Friday!</div><div class="notif-sub">6pm – 10pm · 4 people</div></div>
+      </div>
+      <div class="notif notif-2">
+        <div class="notif-icon" style="background:rgba(124,58,237,0.12)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="5" width="14" height="11" rx="2" stroke="#7C3AED" stroke-width="1.5"/><path d="M5 5 L5 3.5 C5 2.9 5.4 2.5 6 2.5 L12 2.5 C12.6 2.5 13 2.9 13 3.5 L13 5" stroke="#7C3AED" stroke-width="1.5"/><rect x="6" y="10" width="2.5" height="6" rx="1" fill="#7C3AED" opacity="0.5"/><rect x="9.5" y="10" width="2.5" height="6" rx="1" fill="#7C3AED" opacity="0.5"/></svg>
+        </div>
+        <div><div class="notif-title">Villa booked</div><div class="notif-sub">Fri – Sun · 4 guests</div></div>
+      </div>
+      <div class="notif notif-3">
+        <div class="notif-icon" style="background:rgba(249,115,22,0.12)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="7" width="13" height="7" rx="2.5" stroke="#F97316" stroke-width="1.5"/><path d="M1 9 L4 5 L10 5 L14 7" stroke="#F97316" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4.5" cy="15.5" r="1.5" stroke="#F97316" stroke-width="1.3"/><circle cx="11" cy="15.5" r="1.5" stroke="#F97316" stroke-width="1.3"/></svg>
+        </div>
+        <div><div class="notif-title">Rides ordered</div><div class="notif-sub">For all 4</div></div>
+      </div>
+
+      <!-- Phone -->
+      <div class="hero-phone">
+        <div class="phone-screen">
+          <div class="ps-bar">
+            <span class="ps-time">9:41</span>
+            <span class="ps-icons">▲ ◆ ▮▮▮</span>
+          </div>
+          <div class="ps-header">
+            <div class="ps-logo">
+              <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="rgba(124,58,237,0.5)" stroke-width="1.5"/><line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="16" x2="21" y2="19" stroke="white" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="white"/></svg>
+              klockn
+            </div>
+            <div class="ps-group-pill">Family ↓</div>
+          </div>
+
+          <div class="ps-section">
+            <div class="ps-label">Friday availability</div>
+            <div class="ps-member">
+              <div class="ps-av" style="background:linear-gradient(135deg,#7C3AED,#4C1D95)">M</div>
+              <div class="ps-mname">Mum</div>
+              <div class="ps-avail"><div class="ps-avail-fill" style="background:rgba(16,185,129,0.3);width:100%"></div></div>
+              <div class="ps-chip chip-g">Free</div>
+            </div>
+            <div class="ps-member">
+              <div class="ps-av" style="background:linear-gradient(135deg,#F97316,#EA580C)">D</div>
+              <div class="ps-mname">Dad</div>
+              <div class="ps-avail"><div class="ps-avail-fill" style="background:rgba(239,68,68,0.35);left:28%;width:36%"></div></div>
+              <div class="ps-chip chip-r">Busy 2–5</div>
+            </div>
+            <div class="ps-member">
+              <div class="ps-av" style="background:linear-gradient(135deg,#10B981,#059669)">S</div>
+              <div class="ps-mname">Sister</div>
+              <div class="ps-avail"><div class="ps-avail-fill" style="background:rgba(16,185,129,0.3);width:100%"></div></div>
+              <div class="ps-chip chip-g">Free</div>
+            </div>
+            <div class="ps-member">
+              <div class="ps-av" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8)">B</div>
+              <div class="ps-mname">Brother</div>
+              <div class="ps-avail"><div class="ps-avail-fill" style="background:rgba(16,185,129,0.3);width:100%"></div></div>
+              <div class="ps-chip chip-g">Free</div>
+            </div>
+          </div>
+
+          <div class="ps-ai">
+            <div class="ps-ai-header">
+              <div class="ps-ai-dot"></div>
+              <span class="ps-ai-name">Klockn AI</span>
+            </div>
+            <div class="ps-ai-text">The whole family is free <strong>Friday from 6pm</strong> through the weekend. Want to plan something? 🎉</div>
+          </div>
+
+          <div class="ps-actions">
+            <div class="ps-btn ps-btn-yes">Yes, let's go!</div>
+            <div class="ps-btn ps-btn-no">Not now</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ TICKER ════ -->
+<div class="ticker">
+  <div class="ticker-track" id="ticker">
+    <!-- Duplicated for seamless loop -->
+    <span class="ticker-item">Family dinners <em>✦</em></span>
+    <span class="ticker-item">Weekend trips <em>✦</em></span>
+    <span class="ticker-item">Birthday surprises <em>✦</em></span>
+    <span class="ticker-item">Concert nights <em>✦</em></span>
+    <span class="ticker-item">Friend getaways <em>✦</em></span>
+    <span class="ticker-item">Corporate off-sites <em>✦</em></span>
+    <span class="ticker-item">Holiday planning <em>✦</em></span>
+    <span class="ticker-item">Team dinners <em>✦</em></span>
+    <span class="ticker-item">Group travel <em>✦</em></span>
+    <span class="ticker-item">Spontaneous plans <em>✦</em></span>
+    <!-- Duplicate for loop -->
+    <span class="ticker-item">Family dinners <em>✦</em></span>
+    <span class="ticker-item">Weekend trips <em>✦</em></span>
+    <span class="ticker-item">Birthday surprises <em>✦</em></span>
+    <span class="ticker-item">Concert nights <em>✦</em></span>
+    <span class="ticker-item">Friend getaways <em>✦</em></span>
+    <span class="ticker-item">Corporate off-sites <em>✦</em></span>
+    <span class="ticker-item">Holiday planning <em>✦</em></span>
+    <span class="ticker-item">Team dinners <em>✦</em></span>
+    <span class="ticker-item">Group travel <em>✦</em></span>
+    <span class="ticker-item">Spontaneous plans <em>✦</em></span>
+  </div>
+</div>
+
+<!-- ════ § 2  HOW IT WORKS ════ -->
+<section id="how">
+  <div class="how-inner">
+    <div class="rev">
+      <div class="section-ey" style="color:var(--purple)"><div class="ey-line" style="background:var(--purple)"></div>How it works</div>
+      <h2 class="big-h" style="color:var(--ink)">Simple as sending<br/>a message.</h2>
+      <p class="sec-sub" style="color:#666">No more "when is everyone free?" Klockn already knows. It tells you.</p>
+    </div>
+    <div class="steps-v">
+      <div class="step">
+        <div class="step-n">01</div>
+        <div style="width:52px;height:52px;border-radius:14px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="5" width="22" height="20" rx="4" fill="rgba(124,58,237,0.15)" stroke="#7C3AED" stroke-width="1.5"/><rect x="3" y="5" width="22" height="8" rx="4" fill="#7C3AED"/><rect x="3" y="9" width="22" height="4" fill="#7C3AED"/><line x1="9" y1="3" x2="9" y2="7" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="19" y2="7" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="18" r="1.8" fill="#7C3AED"/><circle cx="14" cy="18" r="1.8" fill="#7C3AED"/><circle cx="19" cy="18" r="1.8" fill="#7C3AED"/></svg>
+        </div>
+        <div class="step-t">Connect your calendar</div>
+        <div class="step-d">Link Google or Apple Calendar. We only read free or busy — never event names, who you're meeting, or any details.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <div style="width:52px;height:52px;border-radius:14px;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="10" cy="9" r="4.5" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5"/><circle cx="18" cy="9" r="4.5" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5"/><path d="M2 24 C2 19 5.5 16.5 10 16.5 C12 16.5 13.5 17.5 14 18 C14.5 17.5 16 16.5 18 16.5 C22.5 16.5 26 19 26 24" fill="rgba(249,115,22,0.15)" stroke="#F97316" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="step-t">Build your groups</div>
+        <div class="step-d">Family. College friends. Work crew. Weekend people. Name your groups and invite them once — they're connected forever.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <div style="width:52px;height:52px;border-radius:14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 3 L15.8 10.8 L23 14 L15.8 17.2 L14 25 L12.2 17.2 L5 14 L12.2 10.8 Z" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5" stroke-linejoin="round"/><circle cx="14" cy="14" r="3" fill="#10B981"/></svg>
+        </div>
+        <div class="step-t">AI finds the moment</div>
+        <div class="step-d">Klockn watches real-time availability across your groups and surfaces the window when everyone's actually free. Then nudges you.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">04</div>
+        <div style="width:52px;height:52px;border-radius:14px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M3 10 L3 8 C3 6.9 3.9 6 5 6 L23 6 C24.1 6 25 6.9 25 8 L25 10 C23.3 10 22 11.3 22 13 C22 14.7 23.3 16 25 16 L25 20 C25 21.1 24.1 22 23 22 L5 22 C3.9 22 3 21.1 3 20 L3 16 C4.7 16 6 14.7 6 13 C6 11.3 4.7 10 3 10Z" fill="rgba(245,158,11,0.15)" stroke="#F59E0B" stroke-width="1.5"/><line x1="11" y1="6" x2="11" y2="22" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="2 2"/></svg>
+        </div>
+        <div class="step-t">Book everything, together</div>
+        <div class="step-d">Say yes, start a conversation, and Klockn books the hotel, dinner, tickets, rides — for everyone — all at once.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ § 3  PRODUCT SPOTLIGHT ════ -->
+<section id="product">
+  <div class="product-inner">
+
+    <div class="product-left" id="prodL">
+      <div class="section-ey" style="color:var(--violet)"><div class="ey-line" style="background:var(--violet)"></div>The product</div>
+      <h2 class="big-h" style="color:#fff;margin-top:16px">Watch it happen<br/>in real time.</h2>
+      <p class="sec-sub" style="color:rgba(255,255,255,0.38);margin-top:14px">The moment a free window opens across your group, Klockn sees it. No refresh needed. No checking back.</p>
+
+      <!-- Calendar animation -->
+      <div class="cal-row">
+        <div class="cal-card" id="cc1">
+          <div class="cc-head"><div class="cc-av" style="background:linear-gradient(135deg,#7C3AED,#4C1D95)">M</div><div class="cc-name">Mia</div></div>
+          <div class="cc-body" style="position:relative">
+            <div class="cc-slot free" id="s1-10"><span class="cc-t">10</span></div>
+            <div class="cc-slot free" id="s1-11"><span class="cc-t">11</span></div>
+            <div class="cc-slot free" id="s1-12"><span class="cc-t">12</span></div>
+            <div class="cc-slot free" id="s1-13"><span class="cc-t">1pm</span></div>
+            <div class="cc-slot free" id="s1-14"><span class="cc-t">2pm</span></div>
+            <div class="cc-slot free" id="s1-15"><span class="cc-t">3pm</span></div>
+            <div class="cc-slot free" id="s1-16"><span class="cc-t">4pm</span></div>
+            <div class="cc-slot free" id="s1-17"><span class="cc-t">5pm</span></div>
+            <div class="cc-slot free" id="s1-18"><span class="cc-t">6pm</span></div>
+            <div class="scan-bar" id="sb1"></div>
+          </div>
+        </div>
+        <div class="cal-card" id="cc2">
+          <div class="cc-head"><div class="cc-av" style="background:linear-gradient(135deg,#F97316,#EA580C)">J</div><div class="cc-name">James</div></div>
+          <div class="cc-body" style="position:relative">
+            <div class="cc-slot free" id="s2-10"><span class="cc-t">10</span></div>
+            <div class="cc-slot free" id="s2-11"><span class="cc-t">11</span></div>
+            <div class="cc-slot free" id="s2-12"><span class="cc-t">12</span></div>
+            <div class="cc-slot free" id="s2-13"><span class="cc-t">1pm</span></div>
+            <div class="cc-slot free" id="s2-14"><span class="cc-t">2pm</span></div>
+            <div class="cc-slot free" id="s2-15"><span class="cc-t">3pm</span></div>
+            <div class="cc-slot free" id="s2-16"><span class="cc-t">4pm</span></div>
+            <div class="cc-slot free" id="s2-17"><span class="cc-t">5pm</span></div>
+            <div class="cc-slot free" id="s2-18"><span class="cc-t">6pm</span></div>
+            <div class="scan-bar" id="sb2"></div>
+          </div>
+        </div>
+        <div class="cal-card" id="cc3">
+          <div class="cc-head"><div class="cc-av" style="background:linear-gradient(135deg,#10B981,#059669)">P</div><div class="cc-name">Priya</div></div>
+          <div class="cc-body" style="position:relative">
+            <div class="cc-slot free" id="s3-10"><span class="cc-t">10</span></div>
+            <div class="cc-slot free" id="s3-11"><span class="cc-t">11</span></div>
+            <div class="cc-slot free" id="s3-12"><span class="cc-t">12</span></div>
+            <div class="cc-slot free" id="s3-13"><span class="cc-t">1pm</span></div>
+            <div class="cc-slot free" id="s3-14"><span class="cc-t">2pm</span></div>
+            <div class="cc-slot free" id="s3-15"><span class="cc-t">3pm</span></div>
+            <div class="cc-slot free" id="s3-16"><span class="cc-t">4pm</span></div>
+            <div class="cc-slot free" id="s3-17"><span class="cc-t">5pm</span></div>
+            <div class="cc-slot free" id="s3-18"><span class="cc-t">6pm</span></div>
+            <div class="scan-bar" id="sb3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="match-pill" id="matchPill">
+        <span class="match-pill-ico">✨</span>
+        Everyone's free at 6pm — want to plan something?
+      </div>
+    </div>
+
+    <div class="product-right" id="prodR">
+      <ul class="feat-list">
+        <li class="feat-item">
+          <div class="feat-ico" style="background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2)"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13 2 L5 12 L11 12 L9 20 L17 10 L11 10 Z" fill="rgba(124,58,237,0.3)" stroke="#7C3AED" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+          <div>
+            <div class="feat-t">Real-time, always</div>
+            <div class="feat-d">The moment any calendar updates, Klockn recalculates. You always see the freshest picture of when your people are free.</div>
+          </div>
+        </li>
+        <li class="feat-item">
+          <div class="feat-ico" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2)"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2 C7.7 2 5 4.7 5 8 L5 13 L3 15 L3 16 L19 16 L19 15 L17 13 L17 8 C17 4.7 14.3 2 11 2Z" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 16 C8.5 17.4 9.6 18.5 11 18.5 C12.4 18.5 13.5 17.4 13.5 16" stroke="#F97316" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div>
+            <div class="feat-t">It comes to you</div>
+            <div class="feat-d">You don't open an app and check. Klockn taps you when the moment is right — "The whole family is free this Friday."</div>
+          </div>
+        </li>
+        <li class="feat-item">
+          <div class="feat-ico" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2)"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="7" width="16" height="11" rx="3" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5"/><circle cx="8" cy="12" r="1.5" fill="#10B981"/><circle cx="14" cy="12" r="1.5" fill="#10B981"/><path d="M8 15.5 C9 16.5 13 16.5 14 15.5" stroke="#10B981" stroke-width="1.3" stroke-linecap="round"/><path d="M11 7 L11 4" stroke="#10B981" stroke-width="1.5" stroke-linecap="round"/><circle cx="11" cy="3.5" r="1.5" stroke="#10B981" stroke-width="1.3"/><path d="M3 10 L1 10" stroke="#10B981" stroke-width="1.5" stroke-linecap="round"/><path d="M21 10 L19 10" stroke="#10B981" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div>
+            <div class="feat-t">AI does the rest</div>
+            <div class="feat-d">Say yes and Klockn books everything — hotels, tickets, cabs, restaurants — for everyone in the group. One conversation, done.</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════ § 4  FOR EVERYONE ════ -->
+<section id="everyone">
+  <div class="everyone-inner">
+    <div class="ev-header rev">
+      <div class="section-ey" style="color:var(--coral)"><div class="ey-line" style="background:var(--coral)"></div>For everyone</div>
+      <h2 class="big-h" style="color:var(--ink);margin-top:16px">Every group<br/>in your life.</h2>
+      <p class="sec-sub" style="color:#888;margin-top:14px">One app for every circle. Not just work, not just family — everyone.</p>
+    </div>
+    <div class="cards-row">
+      <div class="ev-card ev-c1">
+        <div class="ev-emoji">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <circle cx="14" cy="13" r="6" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" stroke-width="1.8"/>
+            <circle cx="30" cy="13" r="5" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+            <circle cx="22" cy="29" r="4" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+            <path d="M4 40 C4 34 8 31 14 31" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 31 C16.5 31 18.5 32 19.5 33.5" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M24.5 33.5 C25.5 32 27.5 31 30 31 C36 31 40 34 40 40" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="ev-title">Families</div>
+        <div class="ev-desc">Stop the group chat chaos. Klockn knows when the whole family is free before you even ask. Holiday plans, dinners, trips — all sorted.</div>
+        <div class="ev-tags"><span class="ev-tag">Family dinners</span><span class="ev-tag">Weekend trips</span><span class="ev-tag">Holidays</span></div>
+      </div>
+      <div class="ev-card ev-c2">
+        <div class="ev-emoji">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <circle cx="11" cy="14" r="5.5" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.6)" stroke-width="1.8"/>
+            <circle cx="22" cy="12" r="5.5" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" stroke-width="1.8"/>
+            <circle cx="33" cy="14" r="5.5" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.6)" stroke-width="1.8"/>
+            <path d="M2 38 C2 33 5 30 11 30 C14 30 16 31 17.5 33" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M26.5 33 C28 31 30 30 33 30 C39 30 42 33 42 38" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M17.5 33 C19 30 20.5 29 22 29 C23.5 29 25 30 26.5 33" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="ev-title">Friend groups</div>
+        <div class="ev-desc">That trip you've been "planning" for two years? Klockn finds the real window when everyone's actually free and turns the chat into a booking.</div>
+        <div class="ev-tags"><span class="ev-tag">Group trips</span><span class="ev-tag">Concerts</span><span class="ev-tag">Birthdays</span></div>
+      </div>
+      <div class="ev-card ev-c3">
+        <div class="ev-emoji">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <rect x="4" y="12" width="36" height="26" rx="4" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.6)" stroke-width="1.8"/>
+            <path d="M4 20 L40 20" stroke="rgba(255,255,255,0.4)" stroke-width="1.3"/>
+            <rect x="12" y="28" width="8" height="10" rx="2" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.5)" stroke-width="1.3"/>
+            <rect x="24" y="25" width="8" height="5" rx="1.5" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+            <path d="M14 12 L14 7" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M30 12 L30 7" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="ev-title">Teams & Organizers</div>
+        <div class="ev-desc">Events published at the time that maximises attendance — not just the time that works for whoever's organising. Real turnout, every time.</div>
+        <div class="ev-tags"><span class="ev-tag">Corporate events</span><span class="ev-tag">Off-sites</span><span class="ev-tag">Conferences</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ § 5  BOOKING ════ -->
+<section id="booking">
+  <div class="booking-inner">
+    <div class="booking-top">
+      <div class="rev">
+        <div class="section-ey" style="color:var(--purple)"><div class="ey-line" style="background:var(--purple)"></div>One conversation</div>
+        <h2 class="big-h" style="color:var(--ink);margin-top:16px">Say yes.<br/>We do the rest.</h2>
+        <p class="sec-sub" style="color:#666;margin-top:14px">From the moment Klockn finds your window to the moment you arrive — completely handled.</p>
+        <div class="book-grid">
+          <div class="book-item">
+            <div class="book-em"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="2" y="8" width="32" height="20" rx="4" fill="rgba(124,58,237,0.1)" stroke="#7C3AED" stroke-width="1.5"/><line x1="12" y1="8" x2="12" y2="28" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="2.5 2.5"/><line x1="24" y1="8" x2="24" y2="28" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="2.5 2.5"/><circle cx="18" cy="18" r="3" fill="#7C3AED"/></svg></div>
+            <div class="book-n">Tickets</div><div class="book-s">Shows, concerts, sport</div>
+          </div>
+          <div class="book-item">
+            <div class="book-em"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="6" y="10" width="24" height="20" rx="3" fill="rgba(249,115,22,0.1)" stroke="#F97316" stroke-width="1.5"/><rect x="12" y="22" width="5" height="8" rx="1" fill="#F97316"/><rect x="19" y="22" width="5" height="8" rx="1" fill="#F97316"/><rect x="10" y="16" width="4" height="4" rx="1" fill="#F97316" opacity="0.5"/><rect x="16" y="16" width="4" height="4" rx="1" fill="#F97316" opacity="0.5"/><rect x="22" y="16" width="4" height="4" rx="1" fill="#F97316" opacity="0.5"/><path d="M10 10 L10 7 C10 5.9 10.9 5 12 5 L24 5 C25.1 5 26 5.9 26 7 L26 10" stroke="#F97316" stroke-width="1.5"/></svg></div>
+            <div class="book-n">Hotels</div><div class="book-s">For the whole group</div>
+          </div>
+          <div class="book-item">
+            <div class="book-em"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="2" y="14" width="28" height="14" rx="4" fill="rgba(16,185,129,0.1)" stroke="#10B981" stroke-width="1.5"/><circle cx="9" cy="31" r="3" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5"/><circle cx="23" cy="31" r="3" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5"/><path d="M2 18 L8 10 L20 10 L30 14" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="22" y="12" width="6" height="6" rx="1.5" fill="rgba(16,185,129,0.3)" stroke="#10B981" stroke-width="1"/></svg></div>
+            <div class="book-n">Rides</div><div class="book-s">Everyone gets there</div>
+          </div>
+          <div class="book-item">
+            <div class="book-em"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M4 22 C4 22 8 10 18 10 C28 10 32 22 32 22" fill="rgba(59,130,246,0.1)" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round"/><path d="M4 22 L32 22" stroke="#3B82F6" stroke-width="1.5"/><path d="M18 10 L18 6" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round"/><path d="M10 22 L10 28" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round"/><path d="M26 22 L26 28" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round"/><circle cx="18" cy="18" r="2.5" fill="#3B82F6"/></svg></div>
+            <div class="book-n">Flights</div><div class="book-s">Group travel sorted</div>
+          </div>
+          <div class="book-item">
+            <div class="book-em"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="14" r="6" fill="rgba(245,158,11,0.1)" stroke="#F59E0B" stroke-width="1.5"/><path d="M18 20 L18 30" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/><path d="M10 30 L26 30" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/><path d="M13 30 L11 26 C10 24 11 22 13 22 L23 22 C25 22 26 24 25 26 L23 30" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="14" x2="12" y2="14" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/><line x1="24" y1="14" x2="28" y2="14" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div class="book-n">Restaurants</div><div class="book-s">Tables for any size</div>
+          </div>
+          <div class="book-item">
+            <div class="book-em"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M18 4 L32 14 L32 32 L4 32 L4 14 Z" fill="rgba(239,68,68,0.08)" stroke="#EF4444" stroke-width="1.5" stroke-linejoin="round"/><rect x="13" y="20" width="10" height="12" rx="2" fill="rgba(239,68,68,0.15)" stroke="#EF4444" stroke-width="1.3"/><rect x="15" y="12" width="6" height="6" rx="1" fill="rgba(239,68,68,0.2)" stroke="#EF4444" stroke-width="1"/><path d="M4 14 L18 4 L32 14" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="book-n">Rentals</div><div class="book-s">Villas, cabins, houses</div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-box">
+          <div class="chat-top">
+            <div class="chat-dot"></div>
+            <div class="chat-n">Klockn AI</div>
+            <div class="chat-sub">Family · Friday free</div>
+          </div>
+          <div class="chat-body">
+            <div class="cm ai"   id="c1">The whole family is free Friday from 6pm through the weekend 🎉 Want to plan something?</div>
+            <div class="cm user" id="c2">Yes! Weekend trip somewhere warm</div>
+            <div class="cm ai"   id="c3">Found a villa 2hrs away — pool, sleeps 4, Fri–Sun. Want me to book it and sort rides for everyone?</div>
+            <div class="cm user" id="c4">Book it 🙌</div>
+            <div class="cm done" id="c5">✅ Villa booked · Fri 6pm → Sun · Rides for all 4 · Everyone notified</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ § 6  PRIVACY ════ -->
+<section id="privacy">
+  <div class="priv-inner">
+    <div class="priv-left" id="privL">
+      <div class="section-ey" style="color:var(--violet)"><div class="ey-line" style="background:var(--violet)"></div>Privacy</div>
+      <h2 class="big-h" style="color:#fff;margin-top:16px">They see when.<br/>Never what.</h2>
+      <p class="sec-sub" style="color:rgba(255,255,255,0.38);margin-top:14px">The thing that makes people comfortable sharing. No event names, no details — just free or busy.</p>
+      <div class="priv-feats">
+        <div class="pf">
+          <div class="pf-ico" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2)"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="4" y="10" width="14" height="10" rx="3" fill="rgba(124,58,237,0.2)" stroke="#7C3AED" stroke-width="1.5"/><path d="M7 10 L7 7 C7 4.8 8.8 3 11 3 C13.2 3 15 4.8 15 7 L15 10" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/><circle cx="11" cy="15" r="1.8" fill="#7C3AED"/></svg></div>
+          <div><div class="pf-t">Zero detail sharing</div><div class="pf-d">Your group only sees free or busy. Never the event name, who it's with, or where you're going.</div></div>
+        </div>
+        <div class="pf">
+          <div class="pf-ico" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2)"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13 2 L5 12 L11 12 L9 20 L17 10 L11 10 Z" fill="rgba(249,115,22,0.25)" stroke="#F97316" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+          <div><div class="pf-t">Live, not a snapshot</div><div class="pf-d">Calendar changes reflect instantly. No stale data. No "I forgot to update my calendar."</div></div>
+        </div>
+        <div class="pf">
+          <div class="pf-ico" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2)"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M2 11 C2 11 5.5 5 11 5 C16.5 5 20 11 20 11 C20 11 16.5 17 11 17 C5.5 17 2 11 2 11Z" fill="rgba(16,185,129,0.15)" stroke="#10B981" stroke-width="1.5" stroke-linejoin="round"/><circle cx="11" cy="11" r="3" fill="rgba(16,185,129,0.3)" stroke="#10B981" stroke-width="1.5"/><circle cx="11" cy="11" r="1.2" fill="#10B981"/></svg></div>
+          <div><div class="pf-t">Your rules</div><div class="pf-d">Choose which groups see your time. Block windows. Remove yourself from any group instantly.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="priv-right" id="privR">
+      <div class="priv-phone">
+        <div class="pp-notch"></div>
+        <div class="pp-label">What your group sees</div>
+        <div class="pp-row">
+          <div class="pp-av" style="background:linear-gradient(135deg,#7C3AED,#4C1D95)">M</div>
+          <div class="pp-name">Mum</div>
+          <div class="pp-bar"><div class="pp-fill" style="background:rgba(16,185,129,0.3);width:100%"></div></div>
+          <div class="pp-chip chip-g">Free</div>
+        </div>
+        <div class="pp-row">
+          <div class="pp-av" style="background:linear-gradient(135deg,#F97316,#EA580C)">D</div>
+          <div class="pp-name">Dad</div>
+          <div class="pp-bar"><div class="pp-fill" style="background:rgba(239,68,68,0.35);left:30%;width:40%"></div></div>
+          <div class="pp-chip chip-r">Busy 2–5pm</div>
+        </div>
+        <div class="pp-row">
+          <div class="pp-av" style="background:linear-gradient(135deg,#10B981,#059669)">S</div>
+          <div class="pp-name">Sister</div>
+          <div class="pp-bar"><div class="pp-fill" style="background:rgba(16,185,129,0.3);width:100%"></div></div>
+          <div class="pp-chip chip-g">Free</div>
+        </div>
+        <div class="pp-div"></div>
+        <div class="pp-block">
+          <b>✨ Klockn AI</b>
+          Everyone except Dad is free all day. The whole family is free <strong style="color:#fff">after 5pm Friday</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ § 7  WAITLIST ════ -->
+<section id="waitlist">
+  <div class="wl-inner">
+    <h2 class="wl-h rev">Be first to<br/><span>find the time.</span></h2>
+    <p class="wl-sub rev">Rolling out group by group. Drop your details and we'll reach out when your spot is ready.</p>
+    <form class="wl-form" id="wlForm" onsubmit="handleWL(event)">
+      <input class="wl-inp" type="text"  placeholder="Your full name"          required id="wlName"/>
+      <input class="wl-inp" type="email" placeholder="your@email.com"          required id="wlEmail"/>
+      <input class="wl-inp" type="tel"   placeholder="Phone number (optional)"          id="wlPhone"/>
+      <button type="submit" class="wl-btn">Join the waitlist →</button>
+    </form>
+    <div class="wl-ok" id="wlOk">✅ &nbsp;You're on the list! We'll be in touch.</div>
+    <p class="wl-note">No spam. No sharing. Just your invite when it's time.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-logo">
+    <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="rgba(124,58,237,0.5)" stroke-width="1.5"/><path d="M16 2 A14 14 0 0 1 30 16" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/><line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="white"/></svg>
+    klockn
+  </div>
+  <div class="f-links">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="login.html">Organizer Login</a>
+    <a href="mailto:hello@klockn.com">Contact</a>
+  </div>
+  <div class="f-c">© 2026 Klockn. All rights reserved.</div>
+</footer>
+
+<script>
+/* ── Nav ── */
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled', scrollY > 30)
+},{passive:true})
+
+/* ── Scroll reveal ── */
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting) return
+    const d = parseInt(e.target.dataset.d||0)
+    setTimeout(()=>e.target.classList.add('in'), d)
+    obs.unobserve(e.target)
+  })
+},{threshold:0.12})
+
+document.querySelectorAll('.rev').forEach(el=>obs.observe(el))
+document.querySelectorAll('.step').forEach((el,i)=>{ el.dataset.d=i*90; obs.observe(el) })
+document.querySelectorAll('.ev-card').forEach((el,i)=>{ el.dataset.d=i*120; obs.observe(el) })
+document.querySelectorAll('.book-item').forEach((el,i)=>{ el.dataset.d=i*60; obs.observe(el) })
+;['prodL','prodR','privL','privR','chatPanel'].forEach(id=>{
+  const el=document.getElementById(id); if(el) obs.observe(el)
+})
+
+/* ── Calendar animation ── */
+const busy1=['s1-10','s1-11','s1-12'], busy2=['s2-10','s2-11','s2-13','s2-14'], busy3=['s3-12','s3-13','s3-14','s3-15']
+const matches=['s1-18','s2-18','s3-18']
+const w=ms=>new Promise(r=>setTimeout(r,ms))
+
+let calRunning=false
+const calObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting && !calRunning){ calRunning=true; runCal() }
+  })
+},{threshold:0.3})
+const prodEl=document.getElementById('prodL')
+if(prodEl) calObs.observe(prodEl)
+
+async function runCal(){
+  await w(400)
+  ;[...busy1.map((id,i)=>({id,d:i*80})), ...busy2.map((id,i)=>({id,d:i*80+30})), ...busy3.map((id,i)=>({id,d:i*80+15}))].forEach(({id,d})=>{
+    setTimeout(()=>{ const el=document.getElementById(id); if(el){el.className='cc-slot busy'; el.querySelector('.cc-t').textContent=el.querySelector('.cc-t').textContent} }, d)
+  })
+  await w(700)
+  ;['sb1','sb2','sb3'].forEach((id,i)=>setTimeout(()=>document.getElementById(id)?.classList.add('go'),i*130))
+  await w(1800)
+  matches.forEach((id,i)=>setTimeout(()=>{ const el=document.getElementById(id); if(el) el.className='cc-slot match' },i*110))
+  await w(500)
+  document.getElementById('matchPill')?.classList.add('in')
+  await w(5000)
+  resetCal()
+}
+function resetCal(){
+  document.querySelectorAll('.cc-slot').forEach(el=>el.className='cc-slot free')
+  document.querySelectorAll('.scan-bar').forEach(el=>{ el.classList.remove('go'); void el.offsetWidth })
+  document.getElementById('matchPill')?.classList.remove('in')
+  setTimeout(runCal, 800)
+}
+
+/* ── Chat ── */
+let chatDone=false
+const chatObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting && !chatDone){ chatDone=true; playChat() } })
+},{threshold:0.35})
+const cp=document.getElementById('chatPanel')
+if(cp) chatObs.observe(cp)
+
+async function playChat(){
+  const msgs=['c1','c2','c3','c4','c5'], ds=[500,900,800,800,900]
+  for(let i=0;i<msgs.length;i++){ await w(ds[i]); document.getElementById(msgs[i])?.classList.add('in') }
+}
+
+/* ── Waitlist ── */
+function handleWL(e){
+  e.preventDefault()
+  const btn  = document.querySelector('.wl-btn')
+  const data = {
+    name:  document.getElementById('wlName').value.trim(),
+    email: document.getElementById('wlEmail').value.trim(),
+    phone: document.getElementById('wlPhone').value.trim(),
+  }
+  btn.textContent = 'Saving your spot...'
+  btn.style.opacity = '0.7'
+  btn.disabled = true
+
+  fetch('submit.php', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data),
+  })
+  .then(r => r.json())
+  .then(() => {
+    window.location.href = 'thankyou.html'
+  })
+  .catch(() => {
+    // Fallback: still show success even if fetch fails
+    window.location.href = 'thankyou.html'
+  })
+}
+</script>
+</body>
+</html>

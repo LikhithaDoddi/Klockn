@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Klockn — Organizer Login</title>
+  <meta name="robots" content="noindex"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{--purple:#7C3AED;--violet:#A78BFA;--coral:#F97316;--ink:#09090B}
+    html,body{height:100%}
+    body{
+      font-family:'Inter',sans-serif;
+      background:var(--ink);
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      min-height:100vh;
+      overflow:hidden;
+    }
+
+    /* ── Left — brand panel ── */
+    .brand-panel{
+      background:linear-gradient(160deg,#1a0a2e 0%,#0d0720 60%,#09090B 100%);
+      display:flex;flex-direction:column;justify-content:space-between;
+      padding:40px 48px;position:relative;overflow:hidden;
+    }
+    .brand-panel::before{
+      content:'';position:absolute;top:-100px;left:-100px;
+      width:500px;height:500px;border-radius:50%;
+      background:radial-gradient(circle,rgba(124,58,237,0.18),transparent 65%);
+      pointer-events:none;
+    }
+    .brand-panel::after{
+      content:'';position:absolute;bottom:-80px;right:-80px;
+      width:400px;height:400px;border-radius:50%;
+      background:radial-gradient(circle,rgba(249,115,22,0.08),transparent 65%);
+      pointer-events:none;
+    }
+
+    .brand-logo{
+      display:flex;align-items:center;gap:10px;
+      text-decoration:none;position:relative;z-index:1;
+    }
+    .brand-word{font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+
+    .brand-body{position:relative;z-index:1}
+    .brand-h{
+      font-size:clamp(36px,3vw,52px);font-weight:900;
+      letter-spacing:-2px;line-height:1.05;color:#fff;margin-bottom:20px;
+    }
+    .brand-h span{
+      background:linear-gradient(135deg,var(--violet),var(--coral));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .brand-sub{font-size:16px;color:rgba(255,255,255,0.4);line-height:1.7;max-width:360px}
+
+    /* Floating mini-phone preview */
+    .mini-phone{
+      width:180px;height:300px;
+      background:#111318;border-radius:28px;
+      border:1.5px solid rgba(255,255,255,0.07);
+      padding:16px 12px;
+      box-shadow:0 40px 80px rgba(0,0,0,0.5);
+      margin-top:40px;position:relative;z-index:1;
+    }
+    .mp-bar{height:4px;border-radius:2px;margin-bottom:10px;background:rgba(255,255,255,0.06)}
+    .mp-label{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:8px}
+    .mp-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+    .mp-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+    .mp-name{font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);flex:1}
+    .mp-chip{font-size:8px;font-weight:600;padding:2px 6px;border-radius:100px}
+    .mp-g{background:rgba(16,185,129,0.18);color:#34D399;border:1px solid rgba(16,185,129,0.3)}
+    .mp-r{background:rgba(239,68,68,0.12);color:#F87171;border:1px solid rgba(239,68,68,0.25)}
+    .mp-div{height:1px;background:rgba(255,255,255,0.05);margin:8px 0}
+    .mp-ai{background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.22);border-radius:8px;padding:7px 9px;font-size:9px;color:rgba(255,255,255,0.7);line-height:1.4}
+    .mp-ai b{display:block;font-size:7px;text-transform:uppercase;letter-spacing:1px;color:var(--violet);margin-bottom:3px}
+
+    .brand-foot{font-size:13px;color:rgba(255,255,255,0.2);position:relative;z-index:1}
+
+    /* ── Right — login form ── */
+    .form-panel{
+      background:#fff;display:flex;align-items:center;justify-content:center;
+      padding:48px 40px;
+    }
+    .form-box{width:100%;max-width:380px}
+
+    .form-title{font-size:28px;font-weight:900;letter-spacing:-1px;color:var(--ink);margin-bottom:6px}
+    .form-sub{font-size:15px;color:#888;margin-bottom:40px;line-height:1.6}
+
+    .field{margin-bottom:16px}
+    .field label{display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:7px}
+    .field input{
+      width:100%;padding:14px 18px;
+      background:#F9F9F9;border:1.5px solid #E5E7EB;
+      border-radius:12px;font-family:'Inter',sans-serif;font-size:15px;
+      color:var(--ink);outline:none;transition:all 0.22s;
+    }
+    .field input:focus{border-color:var(--purple);background:#fff;box-shadow:0 0 0 4px rgba(124,58,237,0.08)}
+
+    .forgot{text-align:right;margin-top:-8px;margin-bottom:24px}
+    .forgot a{font-size:13px;color:var(--purple);text-decoration:none;font-weight:500}
+    .forgot a:hover{text-decoration:underline}
+
+    .submit-btn{
+      width:100%;padding:15px;
+      background:var(--ink);color:#fff;
+      border:none;border-radius:12px;
+      font-size:16px;font-weight:700;
+      cursor:pointer;font-family:'Inter',sans-serif;
+      transition:all 0.22s;
+    }
+    .submit-btn:hover{background:#1a1a2e;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+
+    .divider{display:flex;align-items:center;gap:12px;margin:28px 0;color:#ccc;font-size:13px}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:#E5E7EB}
+
+    .form-foot{
+      text-align:center;margin-top:32px;
+      font-size:13px;color:#999;
+    }
+    .form-foot a{color:var(--purple);text-decoration:none;font-weight:500}
+    .form-foot a:hover{text-decoration:underline}
+
+    .error-msg{
+      background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;
+      padding:12px 16px;font-size:13px;color:#DC2626;margin-bottom:16px;
+      display:none;
+    }
+
+    /* Reset password modal */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,0.5);
+      backdrop-filter:blur(4px);z-index:100;
+      display:none;align-items:center;justify-content:center;padding:24px;
+    }
+    .modal-overlay.open{display:flex}
+    .modal{
+      background:#fff;border-radius:20px;padding:36px;
+      width:100%;max-width:380px;
+      box-shadow:0 40px 80px rgba(0,0,0,0.2);
+    }
+    .modal h3{font-size:20px;font-weight:800;margin-bottom:8px;color:var(--ink)}
+    .modal p{font-size:14px;color:#888;margin-bottom:24px;line-height:1.6}
+    .modal-btns{display:flex;gap:10px;margin-top:20px}
+    .modal-cancel{flex:1;padding:12px;background:#F3F4F6;color:var(--ink);border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+    .modal-send{flex:1;padding:12px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
+    .modal-send:hover{background:#6D28D9}
+    .modal-success{text-align:center;padding:20px 0;color:#059669;font-weight:600;font-size:15px;display:none}
+
+    @media(max-width:768px){
+      body{grid-template-columns:1fr}
+      .brand-panel{display:none}
+      .form-panel{padding:32px 24px;align-items:flex-start;padding-top:80px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Brand panel -->
+<div class="brand-panel">
+  <a href="index.html" class="brand-logo">
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="14" stroke="rgba(124,58,237,0.4)" stroke-width="1.5"/>
+      <path d="M16 2 A14 14 0 0 1 30 16" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M30 16 A14 14 0 0 1 16 30" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M16 30 A14 14 0 0 1 2 16" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="13" cy="16" r="4.5" fill="rgba(124,58,237,0.3)"/>
+      <circle cx="16" cy="13" r="4.5" fill="rgba(249,115,22,0.28)"/>
+      <circle cx="19" cy="16" r="4.5" fill="rgba(16,185,129,0.28)"/>
+      <line x1="16" y1="16" x2="16" y2="9.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="16" y1="16" x2="21" y2="19" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+      <circle cx="16" cy="16" r="1.8" fill="white"/>
+    </svg>
+    <span class="brand-word">klockn</span>
+  </a>
+
+  <div class="brand-body">
+    <h2 class="brand-h">Events that<br/>actually <span>fill up.</span></h2>
+    <p class="brand-sub">Find the date that maximises attendance before you publish — then handle RSVPs, ticketing, and reminders automatically.</p>
+    <div class="mini-phone">
+      <div class="mp-bar"></div>
+      <div class="mp-label">Team Offsite · Friday</div>
+      <div class="mp-row">
+        <div class="mp-av" style="background:linear-gradient(135deg,#7C3AED,#4C1D95)">A</div>
+        <div class="mp-name">Alice</div><div class="mp-chip mp-g">Free</div>
+      </div>
+      <div class="mp-row">
+        <div class="mp-av" style="background:linear-gradient(135deg,#F97316,#EA580C)">B</div>
+        <div class="mp-name">Ben</div><div class="mp-chip mp-r">Busy 2–4</div>
+      </div>
+      <div class="mp-row">
+        <div class="mp-av" style="background:linear-gradient(135deg,#10B981,#059669)">C</div>
+        <div class="mp-name">Carla</div><div class="mp-chip mp-g">Free</div>
+      </div>
+      <div class="mp-div"></div>
+      <div class="mp-ai"><b>✨ AI Suggestion</b>Best window: Friday 6pm — 18/20 attendees free.</div>
+    </div>
+  </div>
+
+  <div class="brand-foot">© 2026 Klockn · <a href="privacy.html" style="color:rgba(255,255,255,0.3);text-decoration:none">Privacy</a></div>
+</div>
+
+<!-- Form panel -->
+<div class="form-panel">
+  <div class="form-box">
+    <div class="form-title">Welcome back</div>
+    <p class="form-sub">Sign in to your organizer dashboard.</p>
+
+    <div class="error-msg" id="errorMsg">Incorrect username or password. Please try again.</div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="your@email.com" autocomplete="username" required/>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required/>
+      </div>
+      <div class="forgot"><a href="#" onclick="openReset(event)">Forgot password?</a></div>
+      <button type="submit" class="submit-btn" id="loginBtn">Sign in →</button>
+    </form>
+
+    <div class="form-foot">
+      Don't have an account? <a href="index.html#waitlist">Join the waitlist</a>
+      &nbsp;·&nbsp; <a href="index.html">← Back to home</a>
+    </div>
+  </div>
+</div>
+
+<!-- Reset password modal -->
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <h3>Reset your password</h3>
+    <p>Enter your email and we'll send you a link to reset your password.</p>
+    <div class="field">
+      <label for="resetEmail">Email address</label>
+      <input type="email" id="resetEmail" placeholder="your@email.com"/>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeReset()">Cancel</button>
+      <button class="modal-send" onclick="sendReset()">Send reset link</button>
+    </div>
+    <div class="modal-success" id="resetSuccess">✅ Check your email for the reset link.</div>
+  </div>
+</div>
+
+<script>
+function handleLogin(e) {
+  e.preventDefault()
+  const btn = document.getElementById('loginBtn')
+  btn.textContent = 'Signing in...'
+  btn.disabled = true
+
+  // TODO: POST to /api/auth/login when backend is live
+  // For now: show error (backend not yet connected)
+  setTimeout(() => {
+    document.getElementById('errorMsg').style.display = 'block'
+    btn.textContent = 'Sign in →'
+    btn.disabled = false
+  }, 800)
+}
+
+function openReset(e) {
+  e.preventDefault()
+  document.getElementById('resetModal').classList.add('open')
+}
+function closeReset() {
+  document.getElementById('resetModal').classList.remove('open')
+  document.getElementById('resetSuccess').style.display = 'none'
+  document.getElementById('resetEmail').value = ''
+}
+function sendReset() {
+  const email = document.getElementById('resetEmail').value.trim()
+  if (!email) return
+  // TODO: POST to /api/auth/reset when backend is live
+  document.getElementById('resetSuccess').style.display = 'block'
+  document.querySelector('.modal-btns').style.display = 'none'
+}
+
+// Close modal on overlay click
+document.getElementById('resetModal').addEventListener('click', function(e) {
+  if (e.target === this) closeReset()
+})
+</script>
+
+</body>
+</html>

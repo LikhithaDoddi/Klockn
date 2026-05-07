@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Klockn — Brand Picker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    padding: 48px 24px;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .page-header h1 {
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 12px;
+  }
+
+  .page-header p {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .page-header span {
+    color: #888;
+    font-size: 15px;
+    display: block;
+    margin-top: 10px;
+  }
+
+  /* ── Section headers ── */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto 80px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 28px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .cards {
+    display: grid;
+    gap: 20px;
+  }
+
+  .cards.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .cards.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .cards.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  /* ── Base card ── */
+  .card {
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    border: 2px solid transparent;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .card-label {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ════════════════════════════════════
+     SECTION 1 — COLOR PALETTES
+  ════════════════════════════════════ */
+
+  .palette-card {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 28px;
+  }
+
+  .palette-swatches {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+
+  .palette-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .palette-desc {
+    font-size: 13px;
+    opacity: 0.65;
+    line-height: 1.5;
+  }
+
+  /* Palette A — Navy + Lime */
+  .palette-a {
+    background: linear-gradient(135deg, #0F172A 0%, #1e3a5f 50%, #0F172A 100%);
+  }
+  .palette-a::before {
+    content: '';
+    position: absolute;
+    top: 30px; left: 30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, #A3E635 0%, transparent 70%);
+    opacity: 0.3;
+    border-radius: 50%;
+  }
+
+  /* Palette B — Midnight + Coral */
+  .palette-b {
+    background: linear-gradient(135deg, #1E1B4B 0%, #312e81 50%, #1E1B4B 100%);
+  }
+  .palette-b::before {
+    content: '';
+    position: absolute;
+    top: 30px; left: 30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, #F97316 0%, transparent 70%);
+    opacity: 0.3;
+    border-radius: 50%;
+  }
+
+  /* Palette C — Slate + Sky */
+  .palette-c {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  }
+  .palette-c::before {
+    content: '';
+    position: absolute;
+    top: 30px; left: 30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, #38BDF8 0%, transparent 70%);
+    opacity: 0.3;
+    border-radius: 50%;
+  }
+
+  /* Palette D — Black + Purple */
+  .palette-d {
+    background: linear-gradient(135deg, #09090B 0%, #1a0a2e 100%);
+  }
+  .palette-d::before {
+    content: '';
+    position: absolute;
+    top: 30px; left: 30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, #8B5CF6 0%, transparent 70%);
+    opacity: 0.4;
+    border-radius: 50%;
+  }
+
+  /* ════════════════════════════════════
+     SECTION 2 — LOGO CONCEPTS
+  ════════════════════════════════════ */
+
+  .logo-card {
+    height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background: #111;
+    border: 1px solid #222;
+    padding: 32px;
+    text-align: center;
+  }
+
+  .logo-preview {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .logo-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .logo-card-desc {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  /* Logo A — Wordmark with clock O */
+  .logo-wordmark {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .logo-wordmark .clock-o {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    position: relative;
+    margin: 0 1px;
+  }
+
+  .logo-wordmark .clock-o::before {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 12px;
+    background: #fff;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+
+  .logo-wordmark .clock-o::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 2px;
+    background: #fff;
+    top: 50%;
+    left: 50%;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    transform-origin: left center;
+    transform: translateY(-50%) rotate(30deg);
+  }
+
+  /* Logo B — Venn + Wordmark */
+  .logo-venn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .venn-icon {
+    position: relative;
+    width: 52px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .venn-icon .circle {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .venn-icon .c1 { left: 0; background: rgba(139,92,246,0.7); }
+  .venn-icon .c2 { left: 10px; background: rgba(59,130,246,0.7); }
+  .venn-icon .c3 { left: 20px; background: rgba(16,185,129,0.7); }
+
+  .venn-wordmark {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  /* Logo C — K monogram */
+  .logo-monogram {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -2px;
+    font-style: italic;
+  }
+
+  .logo-monogram-wordmark {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  .logo-c-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Logo D — Abstract clock ring */
+  .logo-ring {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .clock-ring {
+    position: relative;
+    width: 52px;
+    height: 52px;
+  }
+
+  .clock-ring svg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .ring-wordmark {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  /* Logo E — Pill wordmark */
+  .logo-pill {
+    background: linear-gradient(90deg, #8B5CF6, #3B82F6);
+    padding: 12px 28px;
+    border-radius: 100px;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  /* ════════════════════════════════════
+     SECTION 3 — LANDING LAYOUT STYLES
+  ════════════════════════════════════ */
+
+  .layout-card {
+    height: 340px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #222;
+  }
+
+  .layout-preview {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .layout-footer {
+    padding: 16px 20px;
+    background: #0d0d0d;
+    border-top: 1px solid #1e1e1e;
+  }
+
+  .layout-footer strong {
+    font-size: 14px;
+    color: #fff;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .layout-footer p {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  /* Layout A — Dark centered hero */
+  .layout-a-bg {
+    background: linear-gradient(135deg, #09090B 0%, #1a0a2e 100%);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .mock-logo { width: 60px; height: 8px; background: #8B5CF6; border-radius: 4px; }
+  .mock-h1-lg { width: 80%; height: 14px; background: #fff; border-radius: 3px; opacity: 0.9; }
+  .mock-h1-md { width: 60%; height: 14px; background: #fff; border-radius: 3px; opacity: 0.9; }
+  .mock-sub { width: 55%; height: 7px; background: #fff; border-radius: 3px; opacity: 0.3; }
+  .mock-btn { width: 120px; height: 30px; background: #8B5CF6; border-radius: 100px; margin-top: 6px; }
+  .mock-nav { width: 100%; height: 28px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; padding: 0 16px; gap: 8px; position: absolute; top: 0; }
+  .mock-nav-dot { width: 24px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; }
+  .mock-nav-btn { width: 40px; height: 18px; background: #8B5CF6; border-radius: 4px; margin-left: auto; }
+
+  /* Layout B — Split hero */
+  .layout-b-bg {
+    background: #0F172A;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    gap: 0;
+  }
+
+  .split-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px;
+    gap: 8px;
+  }
+
+  .split-right {
+    width: 45%;
+    background: linear-gradient(135deg, #1a0a2e, #0a1628);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mock-phone {
+    width: 52px;
+    height: 90px;
+    background: #1e293b;
+    border-radius: 10px;
+    border: 2px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    gap: 4px;
+    z-index: 1;
+  }
+
+  .mock-phone-line { width: 80%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .mock-phone-chip { width: 50%; height: 4px; background: #8B5CF6; border-radius: 2px; }
+  .mock-phone-green { width: 80%; height: 4px; background: #10b981; border-radius: 2px; }
+
+  /* Layout C — Bento/grid */
+  .layout-c-bg {
+    background: #09090B;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .bento-cell {
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 10px;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bento-1 { background: linear-gradient(135deg, #1a0a2e, #2d1b69); grid-column: 1 / 2; }
+  .bento-2 { background: #111; grid-column: 2 / 3; }
+  .bento-3 { background: #111; }
+  .bento-4 { background: linear-gradient(135deg, #0a1628, #1e3a5f); }
+  .bento-line { height: 5px; border-radius: 2px; background: rgba(255,255,255,0.08); }
+  .bento-accent { height: 5px; border-radius: 2px; background: #8B5CF6; width: 60%; }
+
+  /* ════════════════════════════════════
+     SECTION 4 — HERO STYLE
+  ════════════════════════════════════ */
+
+  .hero-card {
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #222;
+  }
+
+  .hero-preview {
+    flex: 1;
+    padding: 32px 28px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-footer {
+    padding: 14px 20px;
+    background: #0d0d0d;
+    border-top: 1px solid #1e1e1e;
+  }
+
+  .hero-footer strong { font-size: 13px; color: #fff; display: block; margin-bottom: 3px; }
+  .hero-footer p { font-size: 12px; color: #555; }
+
+  /* Hero A — Big bold text */
+  .hero-a { background: #09090B; }
+  .hero-a .tagline {
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-a .tagline em { color: #8B5CF6; font-style: normal; }
+  .hero-a .sub { font-size: 11px; color: #555; position: relative; z-index: 1; }
+  .hero-a .hero-btn {
+    margin-top: 14px;
+    display: inline-block;
+    background: #8B5CF6;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 100px;
+    width: fit-content;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-a .bg-glow {
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  /* Hero B — Soft gradient */
+  .hero-b { background: linear-gradient(135deg, #0F172A 0%, #1a0a2e 100%); }
+  .hero-b .tagline {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .hero-b .sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 14px; line-height: 1.5; }
+  .hero-b .waitlist-row {
+    display: flex;
+    gap: 6px;
+  }
+  .hero-b .mock-input {
+    flex: 1;
+    height: 28px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+  }
+  .hero-b .mock-submit {
+    width: 60px;
+    height: 28px;
+    background: #F97316;
+    border-radius: 6px;
+  }
+
+  /* Hero C — Minimal line */
+  .hero-c { background: #fff; }
+  .hero-c .tagline {
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.15;
+    color: #09090B;
+    margin-bottom: 10px;
+  }
+  .hero-c .tagline em { color: #8B5CF6; font-style: normal; }
+  .hero-c .sub { font-size: 11px; color: #888; margin-bottom: 14px; }
+  .hero-c .hero-btn {
+    display: inline-block;
+    background: #09090B;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 4px;
+    width: fit-content;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .cards.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .cards.cols-3 { grid-template-columns: 1fr; }
+    .cards.cols-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Klockn Brand Picker</h1>
+  <p>Pick what feels right — tell me your choices and we build.</p>
+  <span>Hover to see each option clearly · Tell me A/B/C/number for each section</span>
+</div>
+
+<!-- ════════════════════════════
+     SECTION 1 — COLOR PALETTES
+════════════════════════════ -->
+<div class="section">
+  <div class="section-title">01 — Color Palette (pick one)</div>
+  <div class="cards cols-4">
+
+    <!-- A -->
+    <div class="card palette-card palette-a">
+      <div class="card-label">A</div>
+      <div class="palette-swatches">
+        <div class="swatch" style="background:#0F172A;"></div>
+        <div class="swatch" style="background:#A3E635;"></div>
+        <div class="swatch" style="background:#fff;"></div>
+      </div>
+      <div class="palette-name">Navy + Lime</div>
+      <div class="palette-desc">Bold, tech-forward. Stands out in a sea of blue apps.</div>
+    </div>
+
+    <!-- B -->
+    <div class="card palette-card palette-b">
+      <div class="card-label">B</div>
+      <div class="palette-swatches">
+        <div class="swatch" style="background:#1E1B4B;"></div>
+        <div class="swatch" style="background:#F97316;"></div>
+        <div class="swatch" style="background:#fff;"></div>
+      </div>
+      <div class="palette-name">Midnight + Coral</div>
+      <div class="palette-desc">Warm and energetic. Feels friendly, not corporate.</div>
+    </div>
+
+    <!-- C -->
+    <div class="card palette-card palette-c">
+      <div class="card-label">C</div>
+      <div class="palette-swatches">
+        <div class="swatch" style="background:#0f172a;"></div>
+        <div class="swatch" style="background:#38BDF8;"></div>
+        <div class="swatch" style="background:#fff;"></div>
+      </div>
+      <div class="palette-name">Slate + Sky Blue</div>
+      <div class="palette-desc">Clean and trustworthy. Wins with enterprise buyers.</div>
+    </div>
+
+    <!-- D -->
+    <div class="card palette-card palette-d">
+      <div class="card-label">D</div>
+      <div class="palette-swatches">
+        <div class="swatch" style="background:#09090B;"></div>
+        <div class="swatch" style="background:#8B5CF6;"></div>
+        <div class="swatch" style="background:#FAFAFA;"></div>
+      </div>
+      <div class="palette-name">Black + Purple</div>
+      <div class="palette-desc">Premium and AI-forward. Feels like the future.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SECTION 2 — LOGO CONCEPTS
+════════════════════════════ -->
+<div class="section">
+  <div class="section-title">02 — Logo Concept (pick one)</div>
+  <div class="cards cols-3">
+
+    <!-- Logo A — Clock O wordmark -->
+    <div class="card logo-card">
+      <div class="card-label">A</div>
+      <div class="logo-preview">
+        <div class="logo-wordmark">
+          KL
+          <span class="clock-o"></span>
+          CKN
+        </div>
+      </div>
+      <div class="logo-card-name">Clock O Wordmark</div>
+      <div class="logo-card-desc">The O in KLOCKN is a clock face. Clean, iconic, memorable at any size.</div>
+    </div>
+
+    <!-- Logo B — Venn circles + wordmark -->
+    <div class="card logo-card">
+      <div class="card-label">B</div>
+      <div class="logo-preview">
+        <div class="logo-venn">
+          <div class="venn-icon">
+            <div class="circle c1"></div>
+            <div class="circle c2"></div>
+            <div class="circle c3"></div>
+          </div>
+          <div class="venn-wordmark">klockn</div>
+        </div>
+      </div>
+      <div class="logo-card-name">Venn Overlap + Wordmark</div>
+      <div class="logo-card-desc">3 overlapping circles = 3 people sharing time. The product in one mark.</div>
+    </div>
+
+    <!-- Logo C — K monogram + wordmark -->
+    <div class="card logo-card">
+      <div class="card-label">C</div>
+      <div class="logo-preview">
+        <div class="logo-c-wrap">
+          <div class="logo-monogram">K</div>
+          <div class="logo-monogram-wordmark">lockn</div>
+        </div>
+      </div>
+      <div class="logo-card-name">K Monogram + Wordmark</div>
+      <div class="logo-card-desc">Bold italic K in a rounded square. App icon and wordmark in one system.</div>
+    </div>
+
+    <!-- Logo D — Segmented clock ring -->
+    <div class="card logo-card">
+      <div class="card-label">D</div>
+      <div class="logo-preview">
+        <div class="logo-ring">
+          <div class="clock-ring">
+            <svg viewBox="0 0 52 52" fill="none">
+              <!-- Segmented ring — gaps represent busy/free blocks -->
+              <circle cx="26" cy="26" r="22" stroke="#333" stroke-width="4"/>
+              <path d="M26 4 A22 22 0 0 1 48 26" stroke="#8B5CF6" stroke-width="4" stroke-linecap="round"/>
+              <path d="M48 26 A22 22 0 0 1 26 48" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+              <path d="M26 48 A22 22 0 0 1 4 26" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+              <!-- Clock hands -->
+              <line x1="26" y1="26" x2="26" y2="10" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="26" y1="26" x2="36" y2="30" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="26" cy="26" r="2.5" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="ring-wordmark">klockn</div>
+        </div>
+      </div>
+      <div class="logo-card-name">Segmented Clock Ring</div>
+      <div class="logo-card-desc">Clock face split into colored arcs = multiple people's time overlapping.</div>
+    </div>
+
+    <!-- Logo E — Pill wordmark -->
+    <div class="card logo-card">
+      <div class="card-label">E</div>
+      <div class="logo-preview">
+        <div class="logo-pill">KLOCKN</div>
+      </div>
+      <div class="logo-card-name">Gradient Pill Wordmark</div>
+      <div class="logo-card-desc">All-caps wordmark in a gradient pill. Bold, simple, works everywhere.</div>
+    </div>
+
+    <!-- Logo F — Venn inside clock ring -->
+    <div class="card logo-card">
+      <div class="card-label">F</div>
+      <div class="logo-preview">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="position:relative; width:52px; height:52px;">
+            <svg viewBox="0 0 52 52" fill="none" style="position:absolute; top:0; left:0; width:52px; height:52px;">
+              <circle cx="26" cy="26" r="24" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+              <line x1="26" y1="2" x2="26" y2="26" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="26" y1="26" x2="38" y2="32" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="26" cy="26" r="2" fill="#fff"/>
+            </svg>
+            <!-- 3 tiny venn circles inside -->
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:28px; height:18px;">
+              <div style="position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(139,92,246,0.5); top:2px; left:0;"></div>
+              <div style="position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(59,130,246,0.5); top:2px; left:7px;"></div>
+              <div style="position:absolute; width:14px; height:14px; border-radius:50%; background:rgba(16,185,129,0.5); top:2px; left:14px;"></div>
+            </div>
+          </div>
+          <div style="font-size:28px; font-weight:900; letter-spacing:-1px; color:#fff;">klockn</div>
+        </div>
+      </div>
+      <div class="logo-card-name">Venn Inside Clock</div>
+      <div class="logo-card-desc">Best of both worlds — clock face with the venn overlap living inside it.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SECTION 3 — LANDING LAYOUT
+════════════════════════════ -->
+<div class="section">
+  <div class="section-title">03 — Landing Page Layout (pick one)</div>
+  <div class="cards cols-3">
+
+    <!-- Layout A — Dark centered hero -->
+    <div class="card layout-card">
+      <div class="card-label">A</div>
+      <div class="layout-preview" style="background:#09090B; padding:0; overflow:hidden;">
+        <div class="layout-a-bg">
+          <div class="mock-nav">
+            <div class="mock-nav-dot"></div>
+            <div class="mock-nav-dot"></div>
+            <div class="mock-nav-dot"></div>
+            <div class="mock-nav-btn"></div>
+          </div>
+          <div class="mock-logo"></div>
+          <div class="mock-h1-lg"></div>
+          <div class="mock-h1-md"></div>
+          <div class="mock-sub"></div>
+          <div class="mock-sub" style="width:40%;"></div>
+          <div class="mock-btn"></div>
+        </div>
+      </div>
+      <div class="layout-footer">
+        <strong>Centered Dark Hero</strong>
+        <p>Full-screen centered text on deep dark background. Clean, premium, Apple-style.</p>
+      </div>
+    </div>
+
+    <!-- Layout B — Split hero -->
+    <div class="card layout-card">
+      <div class="card-label">B</div>
+      <div class="layout-preview" style="padding:0; overflow:hidden;">
+        <div class="layout-b-bg">
+          <div class="split-left">
+            <div class="mock-logo" style="background:#8B5CF6; width:40px; height:6px;"></div>
+            <div style="height:8px;"></div>
+            <div class="mock-h1-lg" style="width:90%;"></div>
+            <div class="mock-h1-md" style="width:75%;"></div>
+            <div style="height:4px;"></div>
+            <div class="mock-sub" style="width:85%;"></div>
+            <div class="mock-sub" style="width:65%;"></div>
+            <div style="height:8px;"></div>
+            <div class="mock-btn" style="width:90px; height:24px;"></div>
+          </div>
+          <div class="split-right">
+            <div style="position:absolute; width:80px; height:80px; border-radius:50%; background:radial-gradient(circle, rgba(139,92,246,0.3), transparent); top:20px; right:20px;"></div>
+            <div class="mock-phone"></div>
+          </div>
+        </div>
+      </div>
+      <div class="layout-footer">
+        <strong>Split Hero (Text + App Preview)</strong>
+        <p>Left: headline + CTA. Right: phone mockup of the app. Shows product immediately.</p>
+      </div>
+    </div>
+
+    <!-- Layout C — Bento grid -->
+    <div class="card layout-card">
+      <div class="card-label">C</div>
+      <div class="layout-preview" style="padding:0; overflow:hidden;">
+        <div class="layout-c-bg">
+          <div class="bento-cell bento-1">
+            <div class="bento-accent"></div>
+            <div class="bento-line"></div>
+          </div>
+          <div class="bento-cell bento-2">
+            <div class="bento-line"></div>
+            <div class="bento-line" style="width:70%;"></div>
+          </div>
+          <div class="bento-cell bento-3">
+            <div class="bento-line"></div>
+          </div>
+          <div class="bento-cell bento-4">
+            <div class="bento-accent" style="background:#38BDF8;"></div>
+            <div class="bento-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="layout-footer">
+        <strong>Bento Grid Hero</strong>
+        <p>Feature blocks in a mosaic layout. Trendy, shows multiple product angles at once.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SECTION 4 — HERO COPY STYLE
+════════════════════════════ -->
+<div class="section">
+  <div class="section-title">04 — Hero Headline Treatment (pick one)</div>
+  <div class="cards cols-3">
+
+    <!-- Hero A — Big dark -->
+    <div class="card hero-card">
+      <div class="card-label">A</div>
+      <div class="hero-preview hero-a">
+        <div class="bg-glow"></div>
+        <div class="tagline">Finally, a time<br/>that works for <em>everyone.</em></div>
+        <div class="sub">Share your calendar. Let AI find the moment.</div>
+        <div class="hero-btn">Join the waitlist →</div>
+      </div>
+      <div class="hero-footer">
+        <strong>Big Dark — Purple Accent</strong>
+        <p>Dark bg, white headline, purple on the key word. Bold and confident.</p>
+      </div>
+    </div>
+
+    <!-- Hero B — Soft with input -->
+    <div class="card hero-card">
+      <div class="card-label">B</div>
+      <div class="hero-preview hero-b">
+        <div class="tagline">Finally, a time that<br/>works for everyone.</div>
+        <div class="sub">Klockn finds the perfect moment across your whole group — then books everything.</div>
+        <div class="waitlist-row">
+          <div class="mock-input"></div>
+          <div class="mock-submit"></div>
+        </div>
+      </div>
+      <div class="hero-footer">
+        <strong>Gradient with Inline Waitlist</strong>
+        <p>Email input right in the hero. Zero friction from headline to signup.</p>
+      </div>
+    </div>
+
+    <!-- Hero C — Light/minimal -->
+    <div class="card hero-card">
+      <div class="card-label">C</div>
+      <div class="hero-preview hero-c">
+        <div class="tagline">Finally, a time<br/>that works for <em>everyone.</em></div>
+        <div class="sub" style="color:#888;">Shared calendars. AI group coordination. Instant booking.</div>
+        <div class="hero-btn">Join the waitlist →</div>
+      </div>
+      <div class="hero-footer">
+        <strong>Light / White Hero</strong>
+        <p>Clean white background, dark text. Minimal and corporate-safe.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<div style="text-align:center; padding: 40px 0 20px; color:#333; font-size:13px;">
+  Tell me: Palette __ · Logo __ · Layout __ · Hero __ — and we build it.
+</div>
+
+</body>
+</html>

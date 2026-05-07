@@ -1,0 +1,34 @@
+{
+  "name": "@klockn/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "build": "eas build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo": "~51.0.0",
+    "expo-router": "~3.5.0",
+    "react": "18.2.0",
+    "react-native": "0.74.0",
+    "@klockn/shared": "*",
+    // Calendar connection — opens OAuth flow in a browser, returns token
+    "expo-auth-session": "~5.4.0",
+    "expo-web-browser": "~13.0.0",
+    // Secure storage for tokens on device
+    "expo-secure-store": "~13.0.0",
+    // Push notifications for RSVP reminders
+    "expo-notifications": "~0.28.0",
+    "axios": "^1.7.0",
+    "date-fns": "^3.6.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "~18.2.0",
+    "typescript": "^5.4.0"
+  }
+}

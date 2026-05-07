@@ -1,0 +1,66 @@
+# ─────────────────────────────────────────────
+# Klockn — Apache Config for GoDaddy cPanel
+# ─────────────────────────────────────────────
+
+Options -Indexes
+RewriteEngine On
+
+# ── Force HTTPS ──────────────────────────────
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── Force www → non-www (or reverse — pick one) ──
+# Remove www: klockn.com (non-www canonical)
+RewriteCond %{HTTP_HOST} ^www\.klockn\.com [NC]
+RewriteRule ^ https://klockn.com%{REQUEST_URI} [L,R=301]
+
+# ── Clean URLs (.html extension optional) ────
+# /login → /login.html
+# /privacy → /privacy.html
+# /terms → /terms.html
+# /thankyou → /thankyou.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+?)/?$ $1.html [L]
+
+# ── Custom 404 ────────────────────────────────
+ErrorDocument 404 /404.html
+
+# ── Security headers ──────────────────────────
+<IfModule mod_headers.c>
+  # Prevent clickjacking
+  Header always set X-Frame-Options "SAMEORIGIN"
+  # Prevent MIME sniffing
+  Header always set X-Content-Type-Options "nosniff"
+  # XSS protection
+  Header always set X-XSS-Protection "1; mode=block"
+  # Referrer policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Hide server info
+  Header unset Server
+  Header unset X-Powered-By
+</IfModule>
+
+# ── Protect sensitive files ───────────────────
+<FilesMatch "(waitlist\.csv|\.env)$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+# ── Cache static assets ───────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html             "access plus 1 hour"
+  ExpiresByType text/css              "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType image/svg+xml         "access plus 1 month"
+  ExpiresByType image/png             "access plus 1 month"
+  ExpiresByType image/jpeg            "access plus 1 month"
+  ExpiresByType image/webp            "access plus 1 month"
+</IfModule>
+
+# ── Gzip compression ─────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript text/plain
+</IfModule>

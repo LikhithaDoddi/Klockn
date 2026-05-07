@@ -1,0 +1,51 @@
+{
+  "name": "@klockn/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node-pg-migrate up",
+    "db:rollback": "node-pg-migrate down",
+    "db:seed": "tsx src/db/seed.ts"
+  },
+  "dependencies": {
+    "@klockn/shared": "*",
+    // Web framework
+    "express": "^4.19.0",
+    // Firebase Admin — verifies JWT tokens issued by Firebase Auth on the client
+    "firebase-admin": "^12.1.0",
+    // PostgreSQL client
+    "pg": "^8.11.0",
+    // Query builder (no ORM — keeps SQL transparent)
+    "kysely": "^0.27.0",
+    // Google Calendar API client
+    "googleapis": "^140.0.0",
+    // Email sending for invite emails and reminders
+    "resend": "^3.2.0",
+    // Stripe for 2% platform fee on ticket revenue
+    "stripe": "^15.7.0",
+    // Job queue for async work (calendar syncs, reminder emails)
+    "bullmq": "^5.7.0",
+    // Redis client (for BullMQ job queue)
+    "ioredis": "^5.3.0",
+    "zod": "^3.23.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.0",
+    "@types/pg": "^8.11.0",
+    "@types/cors": "^2.8.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.10.0",
+    "vitest": "^1.6.0",
+    "node-pg-migrate": "^7.3.0"
+  }
+}

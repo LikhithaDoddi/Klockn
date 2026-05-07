@@ -1,0 +1,33 @@
+{
+  "name": "klockn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Availability-first B2B event scheduling platform",
+  // Monorepo managed with npm workspaces — each subfolder is its own package
+  "workspaces": [
+    "web",
+    "mobile",
+    "backend",
+    "ai",
+    "shared"
+  ],
+  "scripts": {
+    // Run all services simultaneously in dev mode
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\" \"npm run dev:ai\"",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:mobile": "npm run dev --workspace=mobile",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:ai": "npm run dev --workspace=ai",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

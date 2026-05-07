@@ -1,0 +1,13 @@
+/* Tailwind base directives — required for utility classes to work */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global CSS variables for Klockn brand colors */
+:root {
+  --klockn-primary: #2563eb;   /* Blue — primary actions */
+  --klockn-accent: #7c3aed;    /* Purple — AI/smart features */
+  --klockn-success: #16a34a;   /* Green — confirmed/available */
+  --klockn-warning: #d97706;   /* Amber — pending/waiting */
+  --klockn-danger: #dc2626;    /* Red — conflicts/errors */
+}
