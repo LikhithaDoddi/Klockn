@@ -18,13 +18,13 @@ Make Klockn feel magical. When a group has a free window, a push notification fi
 - AI service Dockerfile written and tested locally
 - Anthropic SDK initialized, test call working
 - Google OAuth credentials created in Google Cloud Console
-- Azure Container App created for AI service
+- AWS ECS Fargate service created for AI service
 - GitHub Actions deploy workflow ready
 
 **Day 2 — Calendar OAuth**
 - `GET /api/v1/calendar/google/connect` — generates Google OAuth URL
 - `GET /api/v1/calendar/google/callback` — exchanges code, stores encrypted token
-- Tokens encrypted with AES-256-GCM before writing to Azure PostgreSQL
+- Tokens encrypted with AES-256-GCM before writing to AWS RDS PostgreSQL
 - CalendarSyncJob queued immediately after token stored
 
 **Day 3 — Availability Engine**
@@ -40,19 +40,19 @@ Make Klockn feel magical. When a group has a free window, a push notification fi
 - Structured booking suggestion cards returned
 - Response time under 2 seconds on claude-sonnet-4-6
 
-## Infrastructure — Azure
+## Infrastructure — AWS
 
-### Azure Container Apps (AI service compute)
-Same as backend — Dockerfile → ACR → Container App. The AI service runs as a separate Container App, only reachable internally from the backend. Never exposed to the public internet.
+### AWS ECS Fargate (AI service compute)
+Same as backend — Dockerfile → ECR → ECS Fargate. The AI service runs as a separate ECS service, only reachable internally within the VPC from the backend. Never exposed to the public internet.
 
-### Azure Key Vault (secrets)
-All secrets — Anthropic API key, Google OAuth credentials, encryption key — live in Azure Key Vault. Never in `.env` files in production.
+### AWS Secrets Manager (secrets)
+All secrets — Anthropic API key, Google OAuth credentials, encryption key — live in AWS Secrets Manager. Never in `.env` files in production.
 
-### Azure Cache for Redis (job queue)
-BullMQ CalendarSyncJob queue runs on the same Azure Redis instance as the backend. Shared Redis, separate queue namespaces.
+### AWS ElastiCache for Redis (job queue)
+BullMQ CalendarSyncJob queue runs on the same ElastiCache Redis instance as the backend. Shared Redis, separate queue namespaces.
 
-### Azure PostgreSQL (read/write)
-AI service reads `busy_slots` and writes `calendar_connections` directly. Uses the same Azure PostgreSQL instance as the backend — different connection pool, same database.
+### AWS RDS PostgreSQL (read/write)
+AI service reads `busy_slots` and writes `calendar_connections` directly. Uses the same RDS PostgreSQL instance as the backend — different connection pool, same database.
 
 ## Folder Structure I Own
 ```
@@ -60,7 +60,7 @@ ai/
 ├── Dockerfile
 ├── .github/
 │   └── workflows/
-│       └── deploy-ai.yml       # GitHub Actions → Azure Container Apps
+│       └── deploy-ai.yml       # GitHub Actions → AWS ECS Fargate
 ├── src/
 │   ├── index.ts                # Internal Express server (not public)
 │   ├── routes/
@@ -119,33 +119,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Build and push to ACR
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          az acr build --registry klockn \
-            --image ai-service:${{ github.sha }} \
-            ./ai
-      - name: Deploy to Container Apps
+          docker build -t $ECR_REGISTRY/klockn-ai:$IMAGE_TAG ./ai
+          docker push $ECR_REGISTRY/klockn-ai:$IMAGE_TAG
+      - name: Deploy to ECS
         run: |
-          az containerapp update \
-            --name klockn-ai \
-            --resource-group klockn-rg \
-            --image klockn.azurecr.io/ai-service:${{ github.sha }}
+          aws ecs update-service \
+            --cluster klockn \
+            --service klockn-ai \
+            --force-new-deployment
 ```
 
-## Environment Variables (Azure Key Vault)
+## Environment Variables (AWS Secrets Manager)
 ```
 ANTHROPIC_API_KEY
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
 GOOGLE_REDIRECT_URI=https://api.klockn.com/api/v1/calendar/google/callback
-TOKEN_ENCRYPTION_KEY      # 32-byte hex — generated once, stored in Key Vault
+TOKEN_ENCRYPTION_KEY      # 32-byte hex — generated once, stored in Secrets Manager
 AI_SERVICE_PORT=5000
 AI_SERVICE_SECRET         # Backend uses this to call AI service internally
-DATABASE_URL              # Same Azure PostgreSQL as backend
-REDIS_URL                 # Same Azure Redis as backend
+DATABASE_URL              # Same AWS RDS as backend
+REDIS_URL                 # Same AWS ElastiCache as backend
 ```
 
 ## Anthropic Client with Prompt Caching
@@ -166,13 +174,12 @@ Speak naturally — one or two sentences at a time, never lists unless asked.
 When suggesting a booking, respond with JSON inside <booking> tags:
 <booking>{"type":"hotel|flight|restaurant|ticket|ride|rental","title":"...","description":"...","price":"...","cta":"Book this"}</booking>
 Keep messages short. The user is on their phone.`,
-  cache_control: { type: 'ephemeral' as const }, // Cache this on every request
+  cache_control: { type: 'ephemeral' as const },
 }
 ```
 
 ## Availability Algorithm
 ```typescript
-// Core logic — runs after every CalendarSyncJob
 async function findOptimalWindows(
   busySlots: BusySlot[],
   constraints: EventConstraints
@@ -190,7 +197,6 @@ async function findOptimalWindows(
   return enrichWithExplanations(scored.slice(0, 3))
 }
 
-// Trigger push notification when ≥70% free
 const NOTIFICATION_THRESHOLD = 0.7
 if (topWindow.score >= NOTIFICATION_THRESHOLD) {
   await notifyGroup(groupId, topWindow)
@@ -209,17 +215,16 @@ if (topWindow.score >= NOTIFICATION_THRESHOLD) {
 5. User grants access → Google redirects to callback
 6. My callback handler:
    a. Exchange code for { access_token, refresh_token }
-   b. Encrypt refresh_token with AES-256-GCM using KEY_VAULT secret
-   c. Write encrypted token to calendar_connections table in Azure PostgreSQL
-   d. Queue CalendarSyncJob on Azure Redis
+   b. Encrypt refresh_token with AES-256-GCM using Secrets Manager key
+   c. Write encrypted token to calendar_connections table in AWS RDS
+   d. Queue CalendarSyncJob on AWS ElastiCache Redis
    e. Deep link back to app: klockn://calendar-connected
 ```
 
-## Token Encryption (Azure Key Vault + AES-256-GCM)
+## Token Encryption (AWS Secrets Manager + AES-256-GCM)
 ```typescript
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
-// Key comes from Azure Key Vault — never hardcoded
 const KEY = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY!, 'hex')
 
 export function encrypt(text: string): string {
@@ -244,7 +249,7 @@ export function decrypt(data: string): string {
 - [ ] Availability algorithm returns correct top 3 windows for test data
 - [ ] Push notification received on phone when free window found
 - [ ] AI chat responds under 2 seconds
-- [ ] No tokens stored in plain text — encryption verified in Azure PostgreSQL
-- [ ] Docker builds and deploys to Azure Container Apps
+- [ ] No tokens stored in plain text — encryption verified in AWS RDS
+- [ ] Docker builds and deploys to AWS ECS Fargate
 - [ ] TypeScript strict — zero `any`
 - [ ] PR opened with test screenshots as evidence
