@@ -11,9 +11,7 @@
   },
   "dependencies": {
     "@klockn/shared": "*",
-    // Anthropic SDK — powers availability optimization and venue suggestions
     "@anthropic-ai/sdk": "^0.24.0",
-    // Internal API server — called by the backend job queue
     "express": "^4.19.0",
     "date-fns": "^3.6.0",
     "zod": "^3.23.0"

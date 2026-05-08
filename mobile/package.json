@@ -13,18 +13,18 @@
   "dependencies": {
     "expo": "~51.0.0",
     "expo-router": "~3.5.0",
-    "react": "18.2.0",
-    "react-native": "0.74.0",
-    "@klockn/shared": "*",
-    // Calendar connection — opens OAuth flow in a browser, returns token
+    "expo-status-bar": "~1.12.0",
     "expo-auth-session": "~5.4.0",
     "expo-web-browser": "~13.0.0",
-    // Secure storage for tokens on device
     "expo-secure-store": "~13.0.0",
-    // Push notifications for RSVP reminders
     "expo-notifications": "~0.28.0",
+    "react": "18.2.0",
+    "react-native": "0.74.0",
+    "@expo/vector-icons": "^14.0.0",
+    "@klockn/shared": "*",
     "axios": "^1.7.0",
     "date-fns": "^3.6.0",
+    "firebase": "^10.12.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {

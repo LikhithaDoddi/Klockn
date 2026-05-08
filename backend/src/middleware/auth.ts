@@ -1,27 +1,29 @@
-// Auth middleware — verifies Firebase JWT on every protected route
-// Attaches decoded user to req.user so route handlers can access organizer/attendee identity
-
 import type { Request, Response, NextFunction } from 'express'
-import { getAuth } from 'firebase-admin/auth'
+import { getApps, getAuth } from 'firebase-admin/auth'
+import { logger } from '../lib/logger'
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.replace('Bearer ', '')
 
   if (!token) {
-    return res.status(401).json({ error: 'Missing auth token' })
+    return res.status(401).json({ success: false, error: 'Missing auth token' })
+  }
+
+  if (getApps().length === 0) {
+    logger.error('Firebase not initialized — cannot verify token')
+    return res.status(503).json({ success: false, error: 'Auth service unavailable' })
   }
 
   try {
     const decoded = await getAuth().verifyIdToken(token)
-    // Attach uid and email so downstream handlers know who's making the request
     req.user = { uid: decoded.uid, email: decoded.email ?? '' }
     next()
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' })
+  } catch (err) {
+    logger.warn('Token verification failed', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(401).json({ success: false, error: 'Invalid or expired token' })
   }
 }
 
-// Extend Express Request type to include user
 declare global {
   namespace Express {
     interface Request {
