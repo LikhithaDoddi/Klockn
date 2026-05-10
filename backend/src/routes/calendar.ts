@@ -1,39 +1,168 @@
-// Calendar router — handles OAuth callbacks and free/busy reads
-// GET  /calendar/google/connect    → redirect to Google OAuth consent screen
-// GET  /calendar/google/callback   → exchange code for tokens, store encrypted
-// POST /calendar/sync/:attendeeId  → trigger a fresh free/busy read for one attendee
-// GET  /calendar/availability/:eventId → aggregate free/busy for all attendees on an event
-
 import { Router } from 'express'
+import { google } from 'googleapis'
 import { requireAuth } from '../middleware/auth'
+import { getDb } from '../db/client'
+import { encrypt } from '../lib/encrypt'
+import { logger } from '../lib/logger'
 
 export const calendarRouter = Router()
 
-// Initiate Google Calendar OAuth — attendee clicks "Connect Google Calendar"
-calendarRouter.get('/google/connect', (req, res) => {
-  // TODO: generate Google OAuth URL with calendar.readonly scope
-  // TODO: include state param with attendee token to link back after redirect
-  res.redirect('https://accounts.google.com/o/oauth2/auth?TODO')
+async function syncMemberBusy(memberId: string, auth: InstanceType<typeof google.auth.OAuth2>) {
+  const now = new Date()
+  const twoWeeksOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
+
+  const calendar = google.calendar({ version: 'v3', auth })
+  const fbRes = await calendar.freebusy.query({
+    requestBody: {
+      timeMin: now.toISOString(),
+      timeMax: twoWeeksOut.toISOString(),
+      items: [{ id: 'primary' }],
+    },
+  })
+
+  const busy = fbRes.data.calendars?.primary?.busy ?? []
+  if (busy.length === 0) return
+
+  // Delete stale slots then insert fresh ones
+  await getDb()
+    .deleteFrom('group_busy_slots')
+    .where('member_id', '=', memberId)
+    .where('starts_at', '>=', now)
+    .execute()
+
+  await getDb()
+    .insertInto('group_busy_slots')
+    .values(
+      busy
+        .filter((b) => b.start && b.end)
+        .map((b) => ({
+          member_id: memberId,
+          starts_at: new Date(b.start!),
+          ends_at: new Date(b.end!),
+        }))
+    )
+    .execute()
+}
+
+function getOAuthClient() {
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/v1/calendar/google/callback'
+  )
+}
+
+// Returns the Google OAuth URL for an organizer — mobile opens this in a WebBrowser session, web redirects
+calendarRouter.get('/google/connect', requireAuth, async (req, res) => {
+  try {
+    const organizer = await getDb()
+      .selectFrom('organizers')
+      .select('id')
+      .where('firebase_uid', '=', req.user!.uid)
+      .executeTakeFirst()
+
+    if (!organizer) {
+      return res.status(404).json({ success: false, error: 'User profile not found' })
+    }
+
+    const isWeb = req.query.platform === 'web'
+    const rawState = isWeb ? `web:${organizer.id}` : organizer.id
+
+    const oauth2Client = getOAuthClient()
+    const url = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: ['https://www.googleapis.com/auth/calendar.readonly'],
+      state: Buffer.from(rawState).toString('base64'),
+    })
+
+    return res.json({ success: true, data: { url } })
+  } catch (err) {
+    logger.error('Failed to generate Google OAuth URL', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to initiate calendar connection' })
+  }
 })
 
-// Google redirects here after the attendee grants calendar access
+// Google redirects here — exchange code for tokens, store encrypted, deep-link back into app or web
 calendarRouter.get('/google/callback', async (req, res) => {
-  // TODO: exchange req.query.code for access + refresh tokens
-  // TODO: store encrypted refresh token in DB against attendee record
-  // TODO: immediately queue a free/busy read job
-  // TODO: redirect attendee to success screen
-  res.json({ message: 'TODO: handle Google OAuth callback' })
-})
+  const { code, state, error } = req.query
+  const MOBILE_DEEP_LINK = 'klockn://calendar/callback'
+  const WEB_REDIRECT = `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/onboarding`
 
-// Force a fresh calendar read for one attendee (called by AI service when recalculating)
-calendarRouter.post('/sync/:attendeeId', requireAuth, async (req, res) => {
-  // TODO: queue CalendarSyncJob for this attendee
-  res.json({ message: 'TODO: queue calendar sync' })
-})
+  if (error || !code || !state) {
+    const errParam = `?success=false&error=${error ?? 'missing_params'}`
+    return res.redirect(`${MOBILE_DEEP_LINK}${errParam}`)
+  }
 
-// Returns aggregated free/busy slots for all attendees on a given event
-calendarRouter.get('/availability/:eventId', requireAuth, async (req, res) => {
-  // TODO: fetch all attendee free/busy from DB
-  // TODO: merge into a conflict matrix
-  res.json({ availability: [] })
+  try {
+    const stateDecoded = Buffer.from(state as string, 'base64').toString('utf8')
+    const isWeb = stateDecoded.startsWith('web:')
+    const isMember = stateDecoded.startsWith('mem:')
+    const entityId = isWeb ? stateDecoded.slice(4) : isMember ? stateDecoded.slice(4) : stateDecoded
+
+    const oauth2Client = getOAuthClient()
+    const { tokens } = await oauth2Client.getToken(code as string)
+
+    if (!tokens.refresh_token) {
+      return res.redirect(`${APP_DEEP_LINK}?success=false&error=no_refresh_token`)
+    }
+
+    oauth2Client.setCredentials(tokens)
+    const oauth2Api = google.oauth2({ version: 'v2', auth: oauth2Client })
+    const { data: userInfo } = await oauth2Api.userinfo.get()
+    const encryptedToken = encrypt(tokens.refresh_token)
+
+    if (isMember) {
+      // Store member calendar connection
+      await getDb()
+        .insertInto('group_member_calendar_connections')
+        .values({
+          member_id: entityId,
+          provider: 'google',
+          refresh_token_encrypted: encryptedToken,
+        })
+        .onConflict((oc) =>
+          oc.columns(['member_id', 'provider']).doUpdateSet({ refresh_token_encrypted: encryptedToken })
+        )
+        .execute()
+
+      await getDb()
+        .updateTable('group_members')
+        .set({ status: 'calendar_connected' })
+        .where('id', '=', entityId)
+        .execute()
+
+      // Immediately sync free/busy for the next 14 days
+      await syncMemberBusy(entityId, oauth2Client)
+
+      logger.info('Group member calendar connected', { memberId: entityId, email: userInfo.email })
+    } else {
+      // Store organizer calendar connection
+      await getDb()
+        .insertInto('organizer_calendar_connections')
+        .values({
+          organizer_id: entityId,
+          provider: 'google',
+          email: userInfo.email ?? null,
+          refresh_token_encrypted: encryptedToken,
+        })
+        .onConflict((oc) =>
+          oc.columns(['organizer_id', 'provider']).doUpdateSet({
+            refresh_token_encrypted: encryptedToken,
+            email: userInfo.email ?? null,
+          })
+        )
+        .execute()
+
+      logger.info('Organizer calendar connected', { organizerId: entityId, email: userInfo.email })
+    }
+
+    if (isWeb) {
+      return res.redirect(`${WEB_REDIRECT}?calendar=connected`)
+    }
+    return res.redirect(`${MOBILE_DEEP_LINK}?success=true`)
+  } catch (err) {
+    logger.error('Google OAuth callback failed', { error: err instanceof Error ? err.message : String(err) })
+    return res.redirect(`${MOBILE_DEEP_LINK}?success=false&error=server_error`)
+  }
 })
