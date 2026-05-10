@@ -3,7 +3,9 @@ name: Deploy Backend
 on:
   push:
     branches: [agent/backend]
-    paths: [backend/**]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
 
 jobs:
   deploy:
@@ -17,24 +19,41 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: us-east-2
 
       - name: Login to ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push image to ECR
+        id: build
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/klockn-backend:$IMAGE_TAG ./backend
+          docker build -t $ECR_REGISTRY/klockn-backend:$IMAGE_TAG -f backend/Dockerfile .
           docker push $ECR_REGISTRY/klockn-backend:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/klockn-backend:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Deploy to ECS Fargate
+      - name: Download current ECS task definition
         run: |
-          aws ecs update-service \
-            --cluster klockn \
-            --service klockn-backend \
-            --force-new-deployment
+          aws ecs describe-task-definition \
+            --task-definition klockn-backend \
+            --query taskDefinition \
+            --output json > task-def.json
+
+      - name: Update ECS task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: klockn-backend
+          image: ${{ steps.build.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: klockn-backend
+          cluster: klockn
+          wait-for-service-stability: true
