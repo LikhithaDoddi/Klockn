@@ -1,6 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { getApps } from 'firebase-admin/app'
-import { getAuth } from 'firebase-admin/auth'
+import * as admin from 'firebase-admin'
 import { logger } from '../lib/logger'
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -10,13 +9,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return res.status(401).json({ success: false, error: 'Missing auth token' })
   }
 
-  if (getApps().length === 0) {
+  if (admin.apps.length === 0) {
     logger.error('Firebase not initialized — cannot verify token')
     return res.status(503).json({ success: false, error: 'Auth service unavailable' })
   }
 
   try {
-    const decoded = await getAuth().verifyIdToken(token)
+    const decoded = await admin.auth().verifyIdToken(token)
     req.user = { uid: decoded.uid, email: decoded.email ?? '' }
     next()
   } catch (err) {
