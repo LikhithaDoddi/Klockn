@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Page not found — Klockn</title>
+  <meta name="robots" content="noindex"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Inter',sans-serif;background:#09090B;color:#fff;
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      text-align:center;padding:40px 24px;
+      position:relative;overflow:hidden;
+    }
+    body::before{
+      content:'404';
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      font-size:clamp(160px,30vw,320px);font-weight:900;letter-spacing:-10px;
+      color:rgba(255,255,255,0.02);pointer-events:none;user-select:none;
+    }
+    .content{position:relative;z-index:1;}
+    a.logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:#fff;font-size:18px;font-weight:800;margin-bottom:48px;justify-content:center;}
+    h1{font-size:clamp(36px,6vw,60px);font-weight:900;letter-spacing:-2px;line-height:1.05;margin-bottom:16px;}
+    h1 span{background:linear-gradient(135deg,#A78BFA,#F97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    p{font-size:17px;color:rgba(255,255,255,0.4);margin-bottom:40px;line-height:1.7;max-width:400px;}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:14px 32px;background:#7C3AED;color:#fff;
+      border-radius:100px;font-size:15px;font-weight:700;
+      text-decoration:none;transition:all 0.22s;
+    }
+    .btn:hover{background:#6D28D9;transform:translateY(-2px);box-shadow:0 10px 30px rgba(124,58,237,0.4);}
+  </style>
+</head>
+<body>
+  <div class="content">
+    <a href="index.html" class="logo">
+      <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="rgba(124,58,237,0.5)" stroke-width="1.5"/><path d="M16 2 A14 14 0 0 1 30 16" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/><line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="white"/></svg>
+      klockn
+    </a>
+    <h1>Wrong<br/><span>time zone.</span></h1>
+    <p>This page doesn't exist — but the right moment is out there. Let's find it.</p>
+    <a href="index.html" class="btn">← Back to Klockn</a>
+  </div>
+</body>
+</html>
