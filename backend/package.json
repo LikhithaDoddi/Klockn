@@ -9,34 +9,35 @@
     "test": "vitest",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "node-pg-migrate up -m src/db/migrations",
-    "db:rollback": "node-pg-migrate down -m src/db/migrations",
+    "db:migrate": "set NODE_TLS_REJECT_UNAUTHORIZED=0 && node-pg-migrate up -m migrations",
+    "db:rollback": "set NODE_TLS_REJECT_UNAUTHORIZED=0 && node-pg-migrate down -m migrations",
     "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1045.0",
     "@klockn/shared": "*",
-    "express": "^4.19.0",
-    "firebase-admin": "^12.1.0",
-    "pg": "^8.11.0",
-    "kysely": "^0.27.0",
-    "googleapis": "^140.0.0",
-    "stripe": "^15.7.0",
     "bullmq": "^5.7.0",
-    "ioredis": "^5.3.0",
-    "winston": "^3.13.0",
-    "zod": "^3.23.0",
     "cors": "^2.8.5",
+    "express": "^4.19.0",
+    "express-rate-limit": "^7.2.0",
+    "firebase-admin": "^12.1.0",
+    "googleapis": "^140.0.0",
     "helmet": "^7.1.0",
-    "express-rate-limit": "^7.2.0"
+    "ioredis": "^5.3.0",
+    "kysely": "^0.27.0",
+    "pg": "^8.11.0",
+    "stripe": "^15.7.0",
+    "winston": "^3.13.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.0",
-    "@types/pg": "^8.11.0",
     "@types/cors": "^2.8.0",
+    "@types/express": "^4.17.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.0",
+    "@types/pg": "^8.11.0",
+    "node-pg-migrate": "^7.3.0",
     "tsx": "^4.10.0",
-    "vitest": "^1.6.0",
-    "node-pg-migrate": "^7.3.0"
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
   }
 }

@@ -7,8 +7,8 @@
 // 4. Return top 3 slots by score, with Claude used to add context and reasoning
 
 import Anthropic from '@anthropic-ai/sdk'
-import { addMinutes, eachMinuteOfInterval, areIntervalsOverlapping } from 'date-fns'
-import type { BusySlot, EventConstraints, TimeWindow } from '@klockn/shared'
+import { addMinutes, areIntervalsOverlapping } from 'date-fns'
+import type { BusySlot, EventConstraints, TimeWindow } from '../types'
 
 const anthropic = new Anthropic()
 
@@ -38,7 +38,7 @@ function generateCandidates(constraints: EventConstraints): Date[] {
     start = addMinutes(start, step)
   ) {
     // Only consider slots within business hours (9am–9pm) unless organizer overrides
-    const hour = start.getHours()
+    const hour = start.getUTCHours()
     if (hour >= 9 && hour <= 21) {
       slots.push(new Date(start))
     }
@@ -86,16 +86,15 @@ async function enrichWithExplanations(
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 400,
+    system: [{
+      type: 'text',
+      text: 'You are helping an event organizer understand why certain time windows are optimal. For each window given, write one short sentence (max 15 words) explaining why it is a good pick. Return a JSON array: [{"explanation": "..."}, ...]',
+      cache_control: { type: 'ephemeral' },
+    }],
     messages: [{
       role: 'user',
-      content: `You are helping an event organizer understand why certain time windows are optimal.
-For each of these top 3 windows, write one short sentence (max 15 words) explaining why it's a good pick.
-
-Windows:
-${windows.map((w, i) => `${i + 1}. ${w.start.toISOString()} — ${w.freeCount}/${w.totalCount} attendees free`).join('\n')}
-
-Return JSON array: [{"explanation": "..."}, ...]`
-    }]
+      content: `Windows:\n${windows.map((w, i) => `${i + 1}. ${w.start.toISOString()} — ${w.freeCount}/${w.totalCount} attendees free`).join('\n')}`,
+    }],
   })
 
   let explanations: { explanation: string }[] = []

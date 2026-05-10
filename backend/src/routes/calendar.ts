@@ -97,14 +97,29 @@ calendarRouter.get('/google/callback', async (req, res) => {
   try {
     const stateDecoded = Buffer.from(state as string, 'base64').toString('utf8')
     const isWeb = stateDecoded.startsWith('web:')
-    const isMember = stateDecoded.startsWith('mem:')
-    const entityId = isWeb ? stateDecoded.slice(4) : isMember ? stateDecoded.slice(4) : stateDecoded
+    const isMemberWeb = stateDecoded.startsWith('mem-web:')
+    const isMember = stateDecoded.startsWith('mem:') || isMemberWeb
+    const WEB_BASE = process.env.WEB_APP_URL ?? 'http://localhost:3000'
+
+    let entityId: string
+    let memberInviteToken: string | null = null
+    if (isWeb) {
+      entityId = stateDecoded.slice(4)
+    } else if (isMemberWeb) {
+      const parts = stateDecoded.slice(8).split(':')
+      entityId = parts[0]
+      memberInviteToken = parts[1] ?? null
+    } else if (isMember) {
+      entityId = stateDecoded.slice(4)
+    } else {
+      entityId = stateDecoded
+    }
 
     const oauth2Client = getOAuthClient()
     const { tokens } = await oauth2Client.getToken(code as string)
 
     if (!tokens.refresh_token) {
-      return res.redirect(`${APP_DEEP_LINK}?success=false&error=no_refresh_token`)
+      return res.redirect(`${MOBILE_DEEP_LINK}?success=false&error=no_refresh_token`)
     }
 
     oauth2Client.setCredentials(tokens)
@@ -157,6 +172,9 @@ calendarRouter.get('/google/callback', async (req, res) => {
       logger.info('Organizer calendar connected', { organizerId: entityId, email: userInfo.email })
     }
 
+    if (isMemberWeb && memberInviteToken) {
+      return res.redirect(`${WEB_BASE}/invite/${memberInviteToken}?connected=true`)
+    }
     if (isWeb) {
       return res.redirect(`${WEB_REDIRECT}?calendar=connected`)
     }
