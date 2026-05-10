@@ -4,7 +4,7 @@
 
 import { Router } from 'express'
 import { findOptimalWindows } from '../engine/windowOptimizer'
-import type { BusySlot, EventConstraints } from '@klockn/shared'
+import type { BusySlot, EventConstraints } from '../types'
 
 export const windowsRouter = Router()
 

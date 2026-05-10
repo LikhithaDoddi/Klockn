@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Klockn — Icon Approval</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#F7F6FF;color:#09090B;padding:60px 24px;min-height:100vh;}
+    h1{font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:8px;text-align:center;}
+    .sub{font-size:16px;color:#888;text-align:center;margin-bottom:60px;}
+
+    /* Icon sets */
+    .sets{display:flex;flex-direction:column;gap:60px;max-width:900px;margin:0 auto;}
+    .set-label{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#999;margin-bottom:20px;}
+    .icons-row{display:flex;gap:20px;flex-wrap:wrap;}
+
+    /* Each icon card */
+    .icon-card{
+      background:#fff;border-radius:20px;padding:32px;
+      border:1.5px solid rgba(0,0,0,0.07);
+      display:flex;flex-direction:column;align-items:center;gap:16px;
+      min-width:180px;flex:1;cursor:pointer;
+      transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .icon-card:hover{border-color:#7C3AED;box-shadow:0 8px 30px rgba(124,58,237,0.12);transform:translateY(-4px);}
+    .icon-card.selected{border-color:#7C3AED;background:rgba(124,58,237,0.04);box-shadow:0 8px 30px rgba(124,58,237,0.15);}
+    .icon-card.selected .icon-name{color:#7C3AED;}
+
+    .icon-wrap{
+      width:64px;height:64px;border-radius:18px;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .icon-name{font-size:14px;font-weight:700;color:#09090B;}
+    .icon-desc{font-size:12px;color:#999;text-align:center;line-height:1.5;}
+
+    /* Context preview — shows icon inside the actual step card */
+    .context-preview{
+      background:#fff;border-radius:24px;
+      border:1px solid rgba(0,0,0,0.07);
+      overflow:hidden;max-width:900px;margin:0 auto 60px;
+    }
+    .context-title{padding:24px 32px 0;font-size:13px;font-weight:700;color:#999;letter-spacing:2px;text-transform:uppercase;}
+    .step-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;}
+    .step-cell{padding:32px 28px;border-right:1px solid rgba(0,0,0,0.06);position:relative;}
+    .step-cell:last-child{border-right:none;}
+    .step-cell::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;transform:scaleX(0);transition:transform 0.3s;}
+    .sc1::after{background:#7C3AED;transform:scaleX(1);}
+    .sc2::after{background:#F97316;transform:scaleX(1);}
+    .sc3::after{background:#10B981;transform:scaleX(1);}
+    .sc4::after{background:#F59E0B;transform:scaleX(1);}
+    .step-n{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(0,0,0,0.2);margin-bottom:16px;}
+    .step-ico-wrap{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+    .step-t{font-size:16px;font-weight:800;color:#09090B;margin-bottom:6px;letter-spacing:-0.3px;}
+    .step-d{font-size:13px;color:#888;line-height:1.6;}
+
+    /* Selected badge */
+    .sel-badge{
+      display:none;position:absolute;top:-8px;right:-8px;
+      background:#7C3AED;color:#fff;font-size:10px;font-weight:700;
+      padding:3px 8px;border-radius:100px;
+    }
+    .icon-card.selected .sel-badge{display:block;}
+
+    .approve-bar{
+      position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+      background:#09090B;color:#fff;
+      padding:16px 32px;border-radius:100px;
+      font-size:14px;font-weight:600;
+      box-shadow:0 20px 60px rgba(0,0,0,0.3);
+      display:none;align-items:center;gap:16px;
+      white-space:nowrap;
+    }
+    .approve-bar.show{display:flex;}
+    .approve-btn{
+      padding:8px 20px;background:#7C3AED;color:#fff;
+      border:none;border-radius:100px;font-size:13px;font-weight:700;
+      cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;
+    }
+    .approve-btn:hover{background:#6D28D9;}
+  </style>
+</head>
+<body>
+
+<h1>Icon Options</h1>
+<p class="sub">Click the set you like — see it in context below. Tell me your pick.</p>
+
+<div class="sets">
+
+  <!-- SET A — Thin line strokes, minimal -->
+  <div>
+    <div class="set-label">Set A — Thin stroke, minimal (Vercel / Linear style)</div>
+    <div class="icons-row">
+
+      <div class="icon-card" onclick="selectSet('A')" id="setA">
+        <div class="sel-badge">Selected</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+
+          <!-- A1: Calendar connect -->
+          <div class="icon-wrap" style="background:rgba(124,58,237,0.08)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="5" width="22" height="20" rx="4" stroke="#7C3AED" stroke-width="1.8"/>
+              <line x1="3" y1="11" x2="25" y2="11" stroke="#7C3AED" stroke-width="1.8"/>
+              <line x1="9" y1="3" x2="9" y2="8" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="19" y1="3" x2="19" y2="8" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="14" cy="19" r="2.5" fill="#7C3AED"/>
+              <path d="M14 16.5 L14 13" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M14 16.5 L16.5 15" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- A2: Groups -->
+          <div class="icon-wrap" style="background:rgba(249,115,22,0.08)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="10" cy="10" r="4" stroke="#F97316" stroke-width="1.8"/>
+              <circle cx="18" cy="10" r="4" stroke="#F97316" stroke-width="1.8"/>
+              <path d="M3 24 C3 19.5 6 17 10 17" stroke="#F97316" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M25 24 C25 19.5 22 17 18 17" stroke="#F97316" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M10 24 C10 19.5 12 17 14 17 C16 17 18 19.5 18 24" stroke="#F97316" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- A3: AI spark -->
+          <div class="icon-wrap" style="background:rgba(16,185,129,0.08)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M14 4 L15.5 11 L22 14 L15.5 17 L14 24 L12.5 17 L6 14 L12.5 11 Z" stroke="#10B981" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M22 4 L22.7 6.3 L25 7 L22.7 7.7 L22 10 L21.3 7.7 L19 7 L21.3 6.3 Z" stroke="#10B981" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <!-- A4: Booking check -->
+          <div class="icon-wrap" style="background:rgba(245,158,11,0.08)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="6" width="22" height="18" rx="4" stroke="#F59E0B" stroke-width="1.8"/>
+              <path d="M9 14.5 L12.5 18 L19 11" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="icon-name">Set A — Minimal stroke</div>
+        <div class="icon-desc">Clean single lines, geometric shapes. Very premium, works at all sizes.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SET B — Filled with soft glow -->
+  <div>
+    <div class="set-label">Set B — Filled + soft colour fill (Airbnb / Spotify style)</div>
+    <div class="icons-row">
+
+      <div class="icon-card" onclick="selectSet('B')" id="setB">
+        <div class="sel-badge">Selected</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+
+          <!-- B1: Calendar -->
+          <div class="icon-wrap" style="background:rgba(124,58,237,0.1)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="5" width="22" height="20" rx="4" fill="rgba(124,58,237,0.15)" stroke="#7C3AED" stroke-width="1.5"/>
+              <rect x="3" y="5" width="22" height="8" rx="4" fill="#7C3AED"/>
+              <rect x="3" y="9" width="22" height="4" fill="#7C3AED"/>
+              <line x1="9" y1="3" x2="9" y2="7" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/>
+              <line x1="19" y1="3" x2="19" y2="7" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9"  cy="18" r="1.8" fill="#7C3AED"/>
+              <circle cx="14" cy="18" r="1.8" fill="#7C3AED"/>
+              <circle cx="19" cy="18" r="1.8" fill="#7C3AED"/>
+            </svg>
+          </div>
+
+          <!-- B2: Groups -->
+          <div class="icon-wrap" style="background:rgba(249,115,22,0.1)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="10" cy="9" r="4.5" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5"/>
+              <circle cx="18" cy="9" r="4.5" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5"/>
+              <path d="M2 24 C2 19 5.5 16.5 10 16.5 C12 16.5 13.5 17.5 14 18 C14.5 17.5 16 16.5 18 16.5 C22.5 16.5 26 19 26 24" fill="rgba(249,115,22,0.15)" stroke="#F97316" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- B3: Spark filled -->
+          <div class="icon-wrap" style="background:rgba(16,185,129,0.1)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M14 3 L15.8 10.8 L23 14 L15.8 17.2 L14 25 L12.2 17.2 L5 14 L12.2 10.8 Z" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="14" cy="14" r="3" fill="#10B981"/>
+            </svg>
+          </div>
+
+          <!-- B4: Ticket -->
+          <div class="icon-wrap" style="background:rgba(245,158,11,0.1)">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M3 10 L3 8 C3 6.9 3.9 6 5 6 L23 6 C24.1 6 25 6.9 25 8 L25 10 C23.3 10 22 11.3 22 13 C22 14.7 23.3 16 25 16 L25 20 C25 21.1 24.1 22 23 22 L5 22 C3.9 22 3 21.1 3 20 L3 16 C4.7 16 6 14.7 6 13 C6 11.3 4.7 10 3 10Z" fill="rgba(245,158,11,0.15)" stroke="#F59E0B" stroke-width="1.5"/>
+              <line x1="11" y1="6" x2="11" y2="22" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="2 2"/>
+            </svg>
+          </div>
+        </div>
+        <div class="icon-name">Set B — Filled + colour</div>
+        <div class="icon-desc">Soft fills with coloured borders. Warmer, more lifestyle. Good on both dark and light.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SET C — Bold filled, no stroke -->
+  <div>
+    <div class="set-label">Set C — Bold solid fill, no stroke (Notion / Arc style)</div>
+    <div class="icons-row">
+
+      <div class="icon-card" onclick="selectSet('C')" id="setC">
+        <div class="sel-badge">Selected</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+
+          <!-- C1: Calendar -->
+          <div class="icon-wrap" style="background:#7C3AED">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="4" width="20" height="18" rx="3" fill="rgba(255,255,255,0.2)"/>
+              <rect x="2" y="4" width="20" height="7" rx="3" fill="rgba(255,255,255,0.4)"/>
+              <rect x="2" y="8" width="20" height="3" fill="rgba(255,255,255,0.4)"/>
+              <line x1="8" y1="2" x2="8" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <line x1="16" y1="2" x2="16" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="8"  cy="16" r="1.5" fill="white"/>
+              <circle cx="12" cy="16" r="1.5" fill="white"/>
+              <circle cx="16" cy="16" r="1.5" fill="white"/>
+            </svg>
+          </div>
+
+          <!-- C2: Groups -->
+          <div class="icon-wrap" style="background:#F97316">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="9"  cy="7" r="4" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="15" cy="7" r="4" fill="rgba(255,255,255,0.3)"/>
+              <path d="M1 21 C1 16.5 4.5 14 9 14 C11 14 12.5 14.8 13.5 16 C14.5 14.8 16 14 18 14 C22.5 14 26 16.5 26 21" fill="rgba(255,255,255,0.4)"/>
+              <path d="M3 21 C3 17.5 5.5 15.5 9 15.5 C10.5 15.5 11.8 16.2 12.5 17 C13.2 16.2 14.5 15.5 16 15.5 C19.5 15.5 22 17.5 22 21" fill="rgba(255,255,255,0.6)"/>
+            </svg>
+          </div>
+
+          <!-- C3: Spark -->
+          <div class="icon-wrap" style="background:#10B981">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2 L13.5 9.5 L21 12 L13.5 14.5 L12 22 L10.5 14.5 L3 12 L10.5 9.5 Z" fill="rgba(255,255,255,0.8)"/>
+              <path d="M19 2 L19.6 4.4 L22 5 L19.6 5.6 L19 8 L18.4 5.6 L16 5 L18.4 4.4 Z" fill="white"/>
+            </svg>
+          </div>
+
+          <!-- C4: Check -->
+          <div class="icon-wrap" style="background:#F59E0B">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="5" width="20" height="16" rx="3" fill="rgba(255,255,255,0.2)"/>
+              <path d="M7 12.5 L10.5 16 L17 9" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="icon-name">Set C — Bold solid</div>
+        <div class="icon-desc">Coloured squares with white icon inside. Strong, confident. Great on white backgrounds.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTEXT PREVIEW -->
+  <div>
+    <div class="set-label">How Set <span id="previewLabel">A</span> looks in the actual step cards</div>
+    <div class="context-preview">
+      <div class="context-title">How it works — Step cards preview</div>
+      <div class="step-row">
+
+        <div class="step-cell sc1">
+          <div class="step-n">01</div>
+          <div class="step-ico-wrap" style="background:rgba(124,58,237,0.08)" id="prev1">
+            <!-- injected by JS -->
+          </div>
+          <div class="step-t">Connect your calendar</div>
+          <div class="step-d">Link Google or Apple Calendar. We only read free/busy — never event names or details.</div>
+        </div>
+
+        <div class="step-cell sc2">
+          <div class="step-n">02</div>
+          <div class="step-ico-wrap" style="background:rgba(249,115,22,0.08)" id="prev2">
+          </div>
+          <div class="step-t">Build your groups</div>
+          <div class="step-d">Family. Work crew. College friends. Name your groups, invite people once.</div>
+        </div>
+
+        <div class="step-cell sc3">
+          <div class="step-n">03</div>
+          <div class="step-ico-wrap" style="background:rgba(16,185,129,0.08)" id="prev3">
+          </div>
+          <div class="step-t">AI finds the moment</div>
+          <div class="step-d">Klockn watches real-time availability and tells you when everyone's free.</div>
+        </div>
+
+        <div class="step-cell sc4">
+          <div class="step-n">04</div>
+          <div class="step-ico-wrap" style="background:rgba(245,158,11,0.08)" id="prev4">
+          </div>
+          <div class="step-t">Book everything</div>
+          <div class="step-d">Say yes, chat with Klockn's AI, and it books hotels, tickets, rides for the whole group.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Approval bar -->
+<div class="approve-bar" id="approveBar">
+  <span id="approveText">Set A selected</span>
+  <button class="approve-btn" onclick="approve()">Approve this set ✓</button>
+</div>
+
+<script>
+const icons = {
+  A: [
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="5" width="22" height="20" rx="4" stroke="#7C3AED" stroke-width="1.8"/><line x1="3" y1="11" x2="25" y2="11" stroke="#7C3AED" stroke-width="1.8"/><line x1="9" y1="3" x2="9" y2="8" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round"/><line x1="19" y1="3" x2="19" y2="8" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="19" r="2.5" fill="#7C3AED"/><path d="M14 16.5 L14 13" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/><path d="M14 16.5 L16.5 15" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="10" cy="10" r="4" stroke="#F97316" stroke-width="1.8"/><circle cx="18" cy="10" r="4" stroke="#F97316" stroke-width="1.8"/><path d="M3 24 C3 19.5 6 17 10 17" stroke="#F97316" stroke-width="1.8" stroke-linecap="round"/><path d="M25 24 C25 19.5 22 17 18 17" stroke="#F97316" stroke-width="1.8" stroke-linecap="round"/><path d="M10 24 C10 19.5 12 17 14 17 C16 17 18 19.5 18 24" stroke="#F97316" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4 L15.5 11 L22 14 L15.5 17 L14 24 L12.5 17 L6 14 L12.5 11 Z" stroke="#10B981" stroke-width="1.8" stroke-linejoin="round"/><path d="M22 4 L22.7 6.3 L25 7 L22.7 7.7 L22 10 L21.3 7.7 L19 7 L21.3 6.3 Z" stroke="#10B981" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="6" width="22" height="18" rx="4" stroke="#F59E0B" stroke-width="1.8"/><path d="M9 14.5 L12.5 18 L19 11" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  ],
+  B: [
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="5" width="22" height="20" rx="4" fill="rgba(124,58,237,0.15)" stroke="#7C3AED" stroke-width="1.5"/><rect x="3" y="5" width="22" height="8" rx="4" fill="#7C3AED"/><rect x="3" y="9" width="22" height="4" fill="#7C3AED"/><line x1="9" y1="3" x2="9" y2="7" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="19" y2="7" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="18" r="1.8" fill="#7C3AED"/><circle cx="14" cy="18" r="1.8" fill="#7C3AED"/><circle cx="19" cy="18" r="1.8" fill="#7C3AED"/></svg>`,
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="10" cy="9" r="4.5" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5"/><circle cx="18" cy="9" r="4.5" fill="rgba(249,115,22,0.2)" stroke="#F97316" stroke-width="1.5"/><path d="M2 24 C2 19 5.5 16.5 10 16.5 C12 16.5 13.5 17.5 14 18 C14.5 17.5 16 16.5 18 16.5 C22.5 16.5 26 19 26 24" fill="rgba(249,115,22,0.15)" stroke="#F97316" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 3 L15.8 10.8 L23 14 L15.8 17.2 L14 25 L12.2 17.2 L5 14 L12.2 10.8 Z" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5" stroke-linejoin="round"/><circle cx="14" cy="14" r="3" fill="#10B981"/></svg>`,
+    `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M3 10 L3 8 C3 6.9 3.9 6 5 6 L23 6 C24.1 6 25 6.9 25 8 L25 10 C23.3 10 22 11.3 22 13 C22 14.7 23.3 16 25 16 L25 20 C25 21.1 24.1 22 23 22 L5 22 C3.9 22 3 21.1 3 20 L3 16 C4.7 16 6 14.7 6 13 C6 11.3 4.7 10 3 10Z" fill="rgba(245,158,11,0.15)" stroke="#F59E0B" stroke-width="1.5"/><line x1="11" y1="6" x2="11" y2="22" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="2 2"/></svg>`,
+  ],
+  C: [
+    `<div style="width:52px;height:52px;background:#7C3AED;border-radius:14px;display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="18" rx="3" fill="rgba(255,255,255,0.2)"/><rect x="2" y="4" width="20" height="7" rx="3" fill="rgba(255,255,255,0.4)"/><rect x="2" y="8" width="20" height="3" fill="rgba(255,255,255,0.4)"/><line x1="8" y1="2" x2="8" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="2" x2="16" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="16" r="1.5" fill="white"/><circle cx="12" cy="16" r="1.5" fill="white"/><circle cx="16" cy="16" r="1.5" fill="white"/></svg></div>`,
+    `<div style="width:52px;height:52px;background:#F97316;border-radius:14px;display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="4" fill="rgba(255,255,255,0.5)"/><circle cx="15" cy="7" r="4" fill="rgba(255,255,255,0.3)"/><path d="M3 21 C3 17.5 5.5 15.5 9 15.5 C10.5 15.5 11.8 16.2 12.5 17 C13.2 16.2 14.5 15.5 16 15.5 C19.5 15.5 22 17.5 22 21" fill="rgba(255,255,255,0.6)"/></svg></div>`,
+    `<div style="width:52px;height:52px;background:#10B981;border-radius:14px;display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2 L13.5 9.5 L21 12 L13.5 14.5 L12 22 L10.5 14.5 L3 12 L10.5 9.5 Z" fill="rgba(255,255,255,0.8)"/><path d="M19 2 L19.6 4.4 L22 5 L19.6 5.6 L19 8 L18.4 5.6 L16 5 L18.4 4.4 Z" fill="white"/></svg></div>`,
+    `<div style="width:52px;height:52px;background:#F59E0B;border-radius:14px;display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="16" rx="3" fill="rgba(255,255,255,0.2)"/><path d="M7 12.5 L10.5 16 L17 9" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`,
+  ]
+}
+
+// Backgrounds for Set C (already wrapped in div)
+const wrapBg = { A: ['rgba(124,58,237,0.08)','rgba(249,115,22,0.08)','rgba(16,185,129,0.08)','rgba(245,158,11,0.08)'], B: ['rgba(124,58,237,0.1)','rgba(249,115,22,0.1)','rgba(16,185,129,0.1)','rgba(245,158,11,0.1)'], C: ['transparent','transparent','transparent','transparent'] }
+
+let selected = null
+
+function selectSet(set) {
+  // Deselect all
+  ;['A','B','C'].forEach(s => document.getElementById('set'+s).classList.remove('selected'))
+  // Select
+  document.getElementById('set'+set).classList.add('selected')
+  selected = set
+  document.getElementById('previewLabel').textContent = set
+  document.getElementById('approveText').textContent = 'Set ' + set + ' selected'
+  document.getElementById('approveBar').classList.add('show')
+
+  // Update preview
+  ;[1,2,3,4].forEach((n,i) => {
+    const wrap = document.getElementById('prev'+n)
+    wrap.style.background = wrapBg[set][i]
+    wrap.innerHTML = icons[set][i]
+  })
+}
+
+// Default to A
+selectSet('A')
+
+function approve() {
+  alert('Great! Tell me "Approve Set ' + selected + '" in the chat and I\'ll update the landing page.')
+}
+</script>
+</body>
+</html>

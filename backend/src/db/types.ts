@@ -6,6 +6,7 @@ export interface OrganizersTable {
   email: string
   name: string | null
   stripe_account_id: string | null
+  push_token: string | null  // registered via PATCH /users/me/push-token
   created_at: ColumnType<Date, never, never>
 }
 
@@ -61,13 +62,62 @@ export interface TicketPurchasesTable {
   purchased_at: ColumnType<Date, never, never>
 }
 
+export interface GroupsTable {
+  id: Generated<string>
+  organizer_id: string
+  name: string
+  created_at: ColumnType<Date, never, never>
+}
+
+export interface GroupMembersTable {
+  id: Generated<string>
+  group_id: string
+  email: string
+  name: string | null
+  status: ColumnType<'invited' | 'calendar_connected', ('invited' | 'calendar_connected') | undefined, 'invited' | 'calendar_connected'>
+  invite_token: Generated<string>
+  invited_at: ColumnType<Date, never, never>
+}
+
+export interface GroupMemberCalendarConnectionsTable {
+  id: Generated<string>
+  member_id: string
+  provider: 'google' | 'apple'
+  refresh_token_encrypted: string
+  connected_at: ColumnType<Date, never, never>
+  last_synced_at: Date | null
+}
+
+export interface OrganizerCalendarConnectionsTable {
+  id: Generated<string>
+  organizer_id: string
+  provider: ColumnType<'google', 'google' | undefined, 'google'>
+  email: string | null
+  refresh_token_encrypted: string
+  connected_at: ColumnType<Date, never, never>
+  last_synced_at: Date | null
+}
+
+export interface GroupBusySlotsTable {
+  id: Generated<string>
+  member_id: string
+  starts_at: Date
+  ends_at: Date
+  fetched_at: ColumnType<Date, never, never>
+}
+
 export interface Database {
   organizers: OrganizersTable
+  organizer_calendar_connections: OrganizerCalendarConnectionsTable
   events: EventsTable
   attendees: AttendeesTable
   calendar_connections: CalendarConnectionsTable
   busy_slots: BusySlotsTable
   ticket_purchases: TicketPurchasesTable
+  groups: GroupsTable
+  group_members: GroupMembersTable
+  group_member_calendar_connections: GroupMemberCalendarConnectionsTable
+  group_busy_slots: GroupBusySlotsTable
 }
 
 export type Organizer = Selectable<OrganizersTable>

@@ -1,20 +1,22 @@
-// Events router — CRUD for organizer events
-// POST /events       → create new event, trigger attendee invites
-// GET  /events       → list organizer's events
-// GET  /events/:id   → get single event with availability data
-// PATCH /events/:id  → update event (pick window, publish)
-// DELETE /events/:id → cancel event
-
 import { Router } from 'express'
+import { z } from 'zod'
 import { requireAuth } from '../middleware/auth'
+import { validate } from '../middleware/validate'
 
 export const eventsRouter = Router()
 
-// All event routes require the organizer to be authenticated
 eventsRouter.use(requireAuth)
 
-eventsRouter.post('/', async (req, res) => {
-  // TODO: validate body with zod
+const createEventSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  search_start: z.string().datetime(),
+  search_end: z.string().datetime(),
+  duration_minutes: z.number().int().min(15).max(480),
+  ticket_price_cents: z.number().int().min(0).default(0),
+})
+
+eventsRouter.post('/', validate(createEventSchema), async (req, res) => {
   // TODO: insert event into DB
   // TODO: queue job to send invite emails to all attendees
   res.status(201).json({ message: 'TODO: create event' })

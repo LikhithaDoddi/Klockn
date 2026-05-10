@@ -1,16 +1,16 @@
-// Attendees router — manage attendee lists and invite status
-// POST /attendees/invite        → send invite emails to a list of addresses
-// GET  /attendees/:eventId      → list all attendees for an event with their calendar status
-// GET  /attendees/invite/:token → validate an invite token (used by mobile app on deep link)
-
 import { Router } from 'express'
+import { z } from 'zod'
 import { requireAuth } from '../middleware/auth'
+import { validate } from '../middleware/validate'
 
 export const attendeesRouter = Router()
 
-// Send invites — organizer calls this after uploading attendee list
-attendeesRouter.post('/invite', requireAuth, async (req, res) => {
-  // TODO: validate list of emails
+const inviteSchema = z.object({
+  event_id: z.string().uuid(),
+  emails: z.array(z.string().email()).min(1).max(500),
+})
+
+attendeesRouter.post('/invite', requireAuth, validate(inviteSchema), async (req, res) => {
   // TODO: create attendee records in DB with status = 'invited'
   // TODO: queue SendInviteEmailJob for each attendee
   res.status(201).json({ message: 'TODO: send invites' })
