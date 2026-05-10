@@ -3,36 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "node-pg-migrate up",
-    "db:rollback": "node-pg-migrate down",
+    "db:migrate": "node-pg-migrate up -m src/db/migrations",
+    "db:rollback": "node-pg-migrate down -m src/db/migrations",
     "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@klockn/shared": "*",
-    // Web framework
     "express": "^4.19.0",
-    // Firebase Admin — verifies JWT tokens issued by Firebase Auth on the client
     "firebase-admin": "^12.1.0",
-    // PostgreSQL client
     "pg": "^8.11.0",
-    // Query builder (no ORM — keeps SQL transparent)
     "kysely": "^0.27.0",
-    // Google Calendar API client
     "googleapis": "^140.0.0",
-    // Email sending for invite emails and reminders
-    "resend": "^3.2.0",
-    // Stripe for 2% platform fee on ticket revenue
     "stripe": "^15.7.0",
-    // Job queue for async work (calendar syncs, reminder emails)
     "bullmq": "^5.7.0",
-    // Redis client (for BullMQ job queue)
     "ioredis": "^5.3.0",
+    "winston": "^3.13.0",
     "zod": "^3.23.0",
     "cors": "^2.8.5",
     "helmet": "^7.1.0",

@@ -33,97 +33,69 @@ GitHub → Settings → Branches → Add rule → `main`
 - Check: Require pull request reviews before merging
 - Check: Require status checks to pass
 
-### Step 4 — Set up Azure (once credits are approved)
+### Step 4 — Set up AWS (using $100 AWS Activate credit — migrate to Azure when approved)
 
-**Install Azure CLI first:**
+**Install AWS CLI first:**
 ```bash
 # Windows
-winget install Microsoft.AzureCLI
+winget install Amazon.AWSCLI
 
-# Then log in
-az login
+# Then configure
+aws configure
+# Enter: Access Key ID, Secret Access Key, region: us-east-1, output: json
 ```
 
-**Create all Azure resources:**
+**Create all AWS resources:**
 ```bash
-# 1. Create resource group (everything lives here)
-az group create --name klockn-rg --location eastus
+# 1. Create ECR repositories (stores Docker images)
+aws ecr create-repository --repository-name klockn-backend --region us-east-1
+aws ecr create-repository --repository-name klockn-ai --region us-east-1
 
-# 2. Create Azure Container Registry (stores Docker images)
-az acr create --resource-group klockn-rg --name klockn --sku Basic
+# 2. Create RDS PostgreSQL
+aws rds create-db-instance \
+  --db-instance-identifier klockn-db \
+  --db-instance-class db.t3.micro \
+  --engine postgres \
+  --engine-version 15 \
+  --master-username klocknadmin \
+  --master-user-password YOUR_SECURE_PASSWORD \
+  --allocated-storage 20 \
+  --no-multi-az \
+  --publicly-accessible
 
-# 3. Create PostgreSQL Flexible Server
-az postgres flexible-server create \
-  --resource-group klockn-rg \
-  --name klockn-db \
-  --admin-user klocknadmin \
-  --admin-password YOUR_SECURE_PASSWORD \
-  --sku-name Standard_B1ms \
-  --tier Burstable \
-  --version 15
+# 3. Create ElastiCache Redis
+aws elasticache create-cache-cluster \
+  --cache-cluster-id klockn-redis \
+  --cache-node-type cache.t3.micro \
+  --engine redis \
+  --num-cache-nodes 1
 
-# 4. Create Redis Cache
-az redis create \
-  --resource-group klockn-rg \
-  --name klockn-redis \
-  --sku Basic \
-  --vm-size c0
+# 4. Create ECS Cluster
+aws ecs create-cluster --cluster-name klockn
 
-# 5. Create Container Apps environment
-az containerapp env create \
-  --name klockn-env \
-  --resource-group klockn-rg \
-  --location eastus
+# 5. Create S3 bucket
+aws s3 mb s3://klockn-storage --region us-east-1
 
-# 6. Create Key Vault for secrets
-az keyvault create \
-  --name klockn-vault \
-  --resource-group klockn-rg \
-  --location eastus
-
-# 7. Create Blob Storage
-az storage account create \
-  --name klocknstorage \
-  --resource-group klockn-rg \
-  --sku Standard_LRS
-```
-
-**Get connection strings for agents:**
-```bash
-# PostgreSQL connection string
-az postgres flexible-server show-connection-string \
-  --server-name klockn-db \
-  --admin-user klocknadmin \
-  --admin-password YOUR_SECURE_PASSWORD \
-  --database-name klockn
-
-# Redis connection string
-az redis list-keys --name klockn-redis --resource-group klockn-rg
-
-# Storage connection string
-az storage account show-connection-string \
-  --name klocknstorage \
-  --resource-group klockn-rg
-```
-
-**Store all secrets in Key Vault:**
-```bash
-az keyvault secret set --vault-name klockn-vault --name DATABASE-URL --value "YOUR_CONNECTION_STRING"
-az keyvault secret set --vault-name klockn-vault --name FIREBASE-PROJECT-ID --value "..."
-az keyvault secret set --vault-name klockn-vault --name ANTHROPIC-API-KEY --value "..."
-az keyvault secret set --vault-name klockn-vault --name REDIS-URL --value "..."
+# 6. Create Secrets Manager secrets
+aws secretsmanager create-secret --name klockn/DATABASE_URL --secret-string "YOUR_CONNECTION_STRING"
+aws secretsmanager create-secret --name klockn/ANTHROPIC_API_KEY --secret-string "YOUR_KEY"
+aws secretsmanager create-secret --name klockn/FIREBASE_PRIVATE_KEY --secret-string "YOUR_KEY"
 # Add all other secrets from backend/CLAUDE.md and ai/CLAUDE.md
 ```
 
 **Add GitHub Actions credentials:**
 ```bash
-# Create service principal for GitHub Actions to deploy
-az ad sp create-for-rbac \
-  --name klockn-github-actions \
-  --role contributor \
-  --scopes /subscriptions/YOUR_SUB_ID/resourceGroups/klockn-rg \
-  --sdk-auth
-# Copy the JSON output → GitHub repo → Settings → Secrets → AZURE_CREDENTIALS
+# Create IAM user for GitHub Actions
+aws iam create-user --user-name klockn-github-actions
+aws iam attach-user-policy \
+  --user-name klockn-github-actions \
+  --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
+aws iam attach-user-policy \
+  --user-name klockn-github-actions \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
+aws iam create-access-key --user-name klockn-github-actions
+# Copy AccessKeyId → GitHub repo → Settings → Secrets → AWS_ACCESS_KEY_ID
+# Copy SecretAccessKey → GitHub repo → Settings → Secrets → AWS_SECRET_ACCESS_KEY
 ```
 
 ### Step 5 — Open 3 VS Code windows
@@ -177,27 +149,25 @@ Each agent gives you a TASK BRIEF before writing code:
 
 ---
 
-## Azure Portal — Where to Watch Things
+## AWS Console — Where to Watch Things
 
 | What to check | Where |
 |--------------|-------|
-| Container Apps running | portal.azure.com → klockn-rg → Container Apps |
-| Database connections | portal.azure.com → klockn-db → Monitoring |
-| Redis usage | portal.azure.com → klockn-redis → Overview |
-| App logs | portal.azure.com → klockn-backend → Log stream |
-| Credit usage | portal.azure.com → Cost Management + Billing |
+| ECS services running | console.aws.amazon.com → ECS → klockn cluster |
+| Database connections | console.aws.amazon.com → RDS → klockn-db → Monitoring |
+| Redis usage | console.aws.amazon.com → ElastiCache → klockn-redis |
+| App logs | console.aws.amazon.com → CloudWatch → Log groups |
+| Credit/cost usage | console.aws.amazon.com → Billing → Credits |
 | Coralogix dashboard | Your Coralogix account (free forever observability) |
 
 **Set a billing alert immediately:**
 ```bash
-az consumption budget create \
-  --budget-name klockn-alert \
-  --amount 200 \
-  --time-grain Monthly \
-  --category Cost \
-  --resource-group klockn-rg
+aws budgets create-budget \
+  --account-id YOUR_ACCOUNT_ID \
+  --budget '{"BudgetName":"klockn-alert","BudgetLimit":{"Amount":"80","Unit":"USD"},"TimeUnit":"MONTHLY","BudgetType":"COST"}' \
+  --notifications-with-subscribers '[{"Notification":{"NotificationType":"ACTUAL","ComparisonOperator":"GREATER_THAN","Threshold":80},"Subscribers":[{"SubscriptionType":"EMAIL","Address":"likithawa2020@gmail.com"}]}]'
 ```
-Alert fires at $200. At $150-250/month burn you'll never hit it, but set it anyway.
+Alert fires at $80 — keeps you well within the $100 credit.
 
 ---
 

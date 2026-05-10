@@ -7,16 +7,16 @@ I am the Backend Engineer for Klockn. I build and own the Node.js API server, Po
 Before anything else, read the root `CLAUDE.md`. Every rule there applies to me. The "explain before you code" protocol is mandatory — no exceptions.
 
 ## My Mission for the 4-Day Sprint
-Build a reliable, fast API deployed on Azure Container Apps that the mobile app can reach from anywhere. PostgreSQL on Azure. Redis on Azure. Every endpoint the mobile needs — ready on time.
+Build a reliable, fast API deployed on AWS ECS Fargate that the mobile app can reach from anywhere. PostgreSQL on AWS RDS. Redis on AWS ElastiCache. Every endpoint the mobile needs — ready on time.
 
 **Day 1 — Foundation**
 - Dockerfile written and tested locally
-- Express server running locally, connects to Azure PostgreSQL
+- Express server running locally, connects to AWS RDS PostgreSQL
 - Firebase Admin initialized, JWT verification working
 - `/health` endpoint returns 200
 - `GET /api/v1/me` returns authenticated user profile
-- GitHub Actions workflow deploys to Azure Container Apps on push to `agent/backend`
-- All environment variables stored in Azure Key Vault
+- GitHub Actions workflow deploys to AWS ECS Fargate on push to `agent/backend`
+- All environment variables stored in AWS Secrets Manager
 
 **Day 2 — Auth + Calendar Shell**
 - `POST /api/v1/users` — create user profile after Firebase signup
@@ -30,45 +30,48 @@ Build a reliable, fast API deployed on Azure Container Apps that the mobile app 
 - `GET /api/v1/groups/:id` — group + member availability
 - `POST /api/v1/groups/:id/invite` — send invite, create attendee record
 - `GET /api/v1/calendar/availability/:groupId` — aggregate busy slots
-- BullMQ worker running, connected to Azure Cache for Redis
+- BullMQ worker running, connected to AWS ElastiCache for Redis
 
 **Day 4 — Notifications + Polish**
 - `PATCH /api/v1/me/push-token` — store Expo push token
 - `POST /api/v1/internal/notify-group` — internal endpoint for AI service
 - Rate limiting verified, error responses consistent
-- Azure Monitor logs clean, no unhandled rejections
+- CloudWatch logs clean, no unhandled rejections
 
-## Infrastructure — Azure
+## Infrastructure — AWS
 
-### Azure Container Apps (backend compute)
-**Why over ECS/EC2:** No server management. Push a Docker image, it runs. Auto-scales to zero when idle (saves credits). Built-in HTTPS, load balancing, custom domains. Setup in 20 minutes vs half a day for ECS.
+### AWS ECS Fargate (backend compute)
+Serverless containers — no EC2 instances to manage. Push a Docker image to ECR, deploy to ECS Fargate. Auto-scales. Built-in load balancing via ALB. HTTPS via ACM certificate.
 
-### Azure Database for PostgreSQL Flexible Server
-**Why:** Fully managed PostgreSQL. Automated backups every 24 hours. Point-in-time restore. SSL enforced by default. Scales independently from compute. Free under $150k credits.
-**Connection:** Uses SSL — always set `sslmode=require` in connection string.
+### AWS RDS PostgreSQL
+Fully managed PostgreSQL. Automated backups. Point-in-time restore. SSL enforced. Free tier covers db.t3.micro for the sprint.
+**Connection:** Always set `sslmode=require` in connection string.
 
-### Azure Cache for Redis
-**Why:** Managed Redis for BullMQ. No Redis server to maintain. Persistence enabled. Free under credits.
+### AWS ElastiCache for Redis
+Managed Redis for BullMQ job queue. cache.t3.micro covers the sprint. Same VPC as ECS.
 
-### Azure Key Vault
-**Why:** All secrets live here — never in environment variables or `.env` files in production. Container Apps reads secrets from Key Vault at runtime. If a secret leaks, rotate it in Key Vault — no redeployment needed.
+### AWS Secrets Manager
+All secrets live here — never in environment variables or `.env` files in production. ECS task definition pulls secrets from Secrets Manager at runtime.
 
-### Azure Blob Storage
-**Why:** Waitlist CSV exports, profile images, any file storage. Cheaper than S3 under Azure credits.
+### AWS S3
+Waitlist CSV exports, profile images, any file storage.
 
-### Azure Communication Services
-**Why:** Transactional email (invite emails, confirmations). Replaces Resend. Better deliverability. Free under credits.
+### AWS SES (Simple Email Service)
+Transactional email — invite emails, confirmations.
 
-### Coralogix (free forever)
-**Why:** Observability — logs, metrics, alerts. Free 25 units/day forever. Set up on Day 1. If the backend crashes at 2am before Vancouver, Coralogix tells you why.
+### AWS ECR (Elastic Container Registry)
+Stores Docker images. GitHub Actions builds and pushes here on every deploy.
+
+### CloudWatch
+Logs and metrics. ECS containers stream logs to CloudWatch automatically.
 
 ## Folder Structure I Own
 ```
 backend/
-├── Dockerfile                  # Multi-stage build for Azure Container Apps
+├── Dockerfile                  # Multi-stage build for AWS ECS Fargate
 ├── .github/
 │   └── workflows/
-│       └── deploy-backend.yml  # GitHub Actions → Azure Container Apps
+│       └── deploy-backend.yml  # GitHub Actions → AWS ECS Fargate
 ├── src/
 │   ├── index.ts
 │   ├── middleware/
@@ -82,25 +85,24 @@ backend/
 │   │   ├── tickets.ts
 │   │   └── webhooks.ts
 │   ├── db/
-│   │   ├── client.ts           # Kysely + Azure PostgreSQL
+│   │   ├── client.ts           # Kysely + AWS RDS PostgreSQL
 │   │   ├── types.ts
 │   │   └── migrations/
 │   ├── jobs/
-│   │   ├── queues.ts           # BullMQ + Azure Redis
+│   │   ├── queues.ts           # BullMQ + AWS ElastiCache Redis
 │   │   ├── worker.ts
 │   │   ├── calendarSync.ts
-│   │   └── sendInviteEmail.ts  # Azure Communication Services
+│   │   └── sendInviteEmail.ts  # AWS SES client
 │   └── lib/
 │       ├── firebase.ts
-│       ├── email.ts            # Azure Communication Services client
-│       ├── storage.ts          # Azure Blob Storage client
+│       ├── email.ts            # AWS SES client
+│       ├── storage.ts          # AWS S3 client
 │       └── stripe.ts
 └── .env.example
 ```
 
 ## Dockerfile
 ```dockerfile
-# Multi-stage build — keeps production image small
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
@@ -117,7 +119,7 @@ EXPOSE 4000
 CMD ["node", "dist/index.js"]
 ```
 
-## GitHub Actions — Auto Deploy to Azure Container Apps
+## GitHub Actions — Auto Deploy to AWS ECS Fargate
 ```yaml
 # .github/workflows/deploy-backend.yml
 name: Deploy Backend
@@ -131,47 +133,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Build and push to ACR
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          az acr build --registry klockn \
-            --image backend:${{ github.sha }} \
-            ./backend
-      - name: Deploy to Container Apps
+          docker build -t $ECR_REGISTRY/klockn-backend:$IMAGE_TAG ./backend
+          docker push $ECR_REGISTRY/klockn-backend:$IMAGE_TAG
+      - name: Deploy to ECS
         run: |
-          az containerapp update \
-            --name klockn-backend \
-            --resource-group klockn-rg \
-            --image klockn.azurecr.io/backend:${{ github.sha }}
+          aws ecs update-service \
+            --cluster klockn \
+            --service klockn-backend \
+            --force-new-deployment
 ```
 
-## Environment Variables (Azure Key Vault)
+## Environment Variables (AWS Secrets Manager)
 ```
-DATABASE_URL          # Azure PostgreSQL connection string (SSL required)
+DATABASE_URL          # AWS RDS PostgreSQL connection string (SSL required)
 FIREBASE_PROJECT_ID
 FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
-REDIS_URL             # Azure Cache for Redis connection string
-AZURE_COMM_CONNECTION # Azure Communication Services connection string
-AZURE_STORAGE_URL     # Azure Blob Storage URL
+REDIS_URL             # AWS ElastiCache Redis connection string
+AWS_SES_REGION        # us-east-1
+AWS_S3_BUCKET         # klockn-storage
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
-AI_SERVICE_URL        # Internal URL to AI Container App
+AI_SERVICE_URL        # Internal URL to AI ECS service
 AI_SERVICE_SECRET
 PORT=4000
 NODE_ENV=production
 ```
 
-## Azure PostgreSQL Connection (Kysely)
+## AWS RDS PostgreSQL Connection (Kysely)
 ```typescript
 import { Kysely, PostgresDialect } from 'kysely'
 import { Pool } from 'pg'
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true }, // Azure PostgreSQL requires SSL
+  ssl: { rejectUnauthorized: true }, // RDS requires SSL
   max: 10,
 })
 
@@ -192,5 +202,5 @@ export const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) 
 - [ ] Zod validation rejects bad input — returns 400
 - [ ] TypeScript strict — zero `any`
 - [ ] Docker builds locally without errors
-- [ ] Deployed to Azure Container Apps and reachable from mobile
+- [ ] Deployed to AWS ECS Fargate and reachable from mobile
 - [ ] PR opened with curl examples in the description
