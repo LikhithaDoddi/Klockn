@@ -1,34 +1,50 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { requireAuth } from '../middleware/auth'
+import { validate } from '../middleware/validate'
 import { getDb } from '../db/client'
 
 export const usersRouter = Router()
 
 usersRouter.use(requireAuth)
 
-usersRouter.get('/me', async (req, res) => {
+const createUserSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+})
+
+usersRouter.post('/', validate(createUserSchema), async (req, res) => {
   try {
-    const organizer = await getDb()
+    const existing = await getDb()
       .selectFrom('organizers')
-      .selectAll()
+      .select('id')
       .where('firebase_uid', '=', req.user!.uid)
       .executeTakeFirst()
 
-    if (!organizer) {
-      return res.status(404).json({ success: false, error: 'User profile not found' })
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'User profile already exists' })
     }
 
-    return res.json({
+    const organizer = await getDb()
+      .insertInto('organizers')
+      .values({
+        firebase_uid: req.user!.uid,
+        email: req.user!.email ?? '',
+        name: req.body.name ?? null,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow()
+
+    return res.status(201).json({
       success: true,
       data: {
         id: organizer.id,
         email: organizer.email,
         name: organizer.name,
-        stripeAccountId: organizer.stripe_account_id,
         createdAt: organizer.created_at,
       },
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Failed to fetch user profile' })
+    return res.status(500).json({ success: false, error: 'Failed to create user profile' })
   }
 })
+
