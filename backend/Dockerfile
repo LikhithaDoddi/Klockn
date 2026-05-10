@@ -1,11 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy root workspace files including lockfile
 COPY package.json package-lock.json ./
 COPY shared/ ./shared/
-
-# Copy backend package files
 COPY backend/package*.json ./backend/
 
 RUN npm ci --workspace=backend
@@ -20,6 +17,6 @@ ENV NODE_ENV=production
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
-COPY backend/package*.json ./
+COPY backend/package.json ./
 EXPOSE 4000
 CMD ["node", "dist/index.js"]
