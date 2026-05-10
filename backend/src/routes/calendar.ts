@@ -66,7 +66,8 @@ calendarRouter.get('/google/connect', requireAuth, async (req, res) => {
     }
 
     const isWeb = req.query.platform === 'web'
-    const rawState = isWeb ? `web:${organizer.id}` : organizer.id
+    const returnTo = typeof req.query.returnTo === 'string' ? req.query.returnTo : 'onboarding'
+    const rawState = isWeb ? `web:${organizer.id}:${returnTo}` : organizer.id
 
     const oauth2Client = getOAuthClient()
     const url = oauth2Client.generateAuthUrl({
@@ -103,8 +104,11 @@ calendarRouter.get('/google/callback', async (req, res) => {
 
     let entityId: string
     let memberInviteToken: string | null = null
+    let webReturnTo = 'onboarding'
     if (isWeb) {
-      entityId = stateDecoded.slice(4)
+      const parts = stateDecoded.slice(4).split(':')
+      entityId = parts[0]
+      webReturnTo = parts[1] ?? 'onboarding'
     } else if (isMemberWeb) {
       const parts = stateDecoded.slice(8).split(':')
       entityId = parts[0]
@@ -176,7 +180,10 @@ calendarRouter.get('/google/callback', async (req, res) => {
       return res.redirect(`${WEB_BASE}/invite/${memberInviteToken}?connected=true`)
     }
     if (isWeb) {
-      return res.redirect(`${WEB_REDIRECT}?calendar=connected`)
+      const destination = webReturnTo === 'dashboard'
+        ? `${WEB_BASE}/dashboard/calendar?calendar=connected`
+        : `${WEB_REDIRECT}?calendar=connected`
+      return res.redirect(destination)
     }
     return res.redirect(`${MOBILE_DEEP_LINK}?success=true`)
   } catch (err) {

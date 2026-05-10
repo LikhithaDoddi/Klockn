@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { addDays, format, startOfWeek, isToday } from 'date-fns'
 import { api } from '@/lib/api'
 
@@ -26,8 +27,9 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null)
 
   const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd')
+  const searchParams = useSearchParams()
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [searchParams])
 
   async function load() {
     setLoading(true)
@@ -54,7 +56,7 @@ export default function CalendarPage() {
     setError(null)
     try {
       const res = await api.get<{ success: boolean; data: { url: string } }>('/api/v1/calendar/google/connect', {
-        params: { platform: 'web' },
+        params: { platform: 'web', returnTo: 'dashboard' },
       })
       window.location.href = res.data.data.url
     } catch {
