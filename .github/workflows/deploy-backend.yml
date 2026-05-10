@@ -1,10 +1,12 @@
 name: Deploy Backend
 
 on:
+  workflow_dispatch:
   push:
     branches: [agent/backend]
     paths:
       - 'backend/**'
+      - 'package-lock.json'
       - '.github/workflows/deploy-backend.yml'
 
 jobs:
