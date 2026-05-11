@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { Suspense, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
+import { KlocknMark } from '@/components/KlocknLogo'
 
 interface InviteDetails {
   memberId: string
@@ -122,9 +123,7 @@ function InviteContent() {
       <div className="w-full max-w-sm fade-in-up relative z-10">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-white font-black text-lg shadow-[0_4px_12px_rgba(124,58,237,0.35)]">
-            K
-          </div>
+          <KlocknMark size={30} />
           <span className="text-lg font-bold text-[#09090B]">klockn</span>
         </div>
 

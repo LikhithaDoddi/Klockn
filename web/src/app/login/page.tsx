@@ -8,6 +8,7 @@ import { signInWithGoogle, auth } from '@/lib/firebase'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
+import { KlocknMark } from '@/components/KlocknLogo'
 
 export default function LoginPage() {
   const { user, loading } = useAuth()
@@ -76,8 +77,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm fade-in-up relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-white text-3xl font-black shadow-[0_8px_32px_rgba(124,58,237,0.35)]">
-            K
+          <div className="w-16 h-16 rounded-2xl bg-white border border-black/8 flex items-center justify-center shadow-[0_8px_32px_rgba(124,58,237,0.15)]">
+            <KlocknMark size={44} />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-[#09090B] tracking-tight">
