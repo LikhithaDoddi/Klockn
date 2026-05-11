@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { signOutUser } from '@/lib/firebase'
+import { KlocknMark } from '@/components/KlocknLogo'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -43,9 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-white text-sm font-black shadow-[0_4px_12px_rgba(124,58,237,0.3)]">
-                K
-              </div>
+              <KlocknMark size={28} />
               <span className="text-base font-bold text-[#09090B] tracking-tight">klockn</span>
             </Link>
             <div className="flex items-center gap-1">

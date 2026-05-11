@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
+import { KlocknMark } from '@/components/KlocknLogo'
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17]
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -116,9 +117,7 @@ function OnboardingContent() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-white text-sm font-black shadow-md">
-            K
-          </div>
+          <KlocknMark size={28} />
           <span className="font-bold text-[#09090B]">klockn</span>
         </div>
         {/* Step dots */}
