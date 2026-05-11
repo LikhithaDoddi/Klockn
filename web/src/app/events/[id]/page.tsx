@@ -1,5 +1,4 @@
-// Individual event page — shows availability progress and AI-suggested windows
-// Organizer picks from top 3 windows once enough attendees have connected calendars
+export const dynamic = 'force-dynamic'
 
 export default function EventPage({ params }: { params: { id: string } }) {
   return (

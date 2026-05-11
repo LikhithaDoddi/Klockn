@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { Suspense, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 
@@ -13,6 +15,18 @@ interface InviteDetails {
 }
 
 export default function InvitePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-[3px] border-[#7C3AED]/20 border-t-[#7C3AED] animate-spin" />
+      </div>
+    }>
+      <InviteContent />
+    </Suspense>
+  )
+}
+
+function InviteContent() {
   const { token } = useParams<{ token: string }>()
   const searchParams = useSearchParams()
   const [invite, setInvite] = useState<InviteDetails | null>(null)

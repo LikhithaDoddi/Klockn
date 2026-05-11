@@ -21,6 +21,10 @@
     "lint": "npm run lint --workspaces",
     "typecheck": "npm run typecheck --workspaces"
   },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.0",
     "typescript": "^5.4.0"
