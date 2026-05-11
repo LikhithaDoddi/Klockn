@@ -191,10 +191,14 @@ calendarRouter.get('/google/callback', async (req, res) => {
     return res.redirect(`${MOBILE_DEEP_LINK}?success=true`)
   } catch (err) {
     logger.error('Google OAuth callback failed', { error: err instanceof Error ? err.message : String(err) })
-    const WEB_BASE_ERR = process.env.WEB_APP_URL ?? 'http://localhost:3000'
-    const stateStr = typeof error === 'string' ? '' : (typeof req.query.state === 'string' ? Buffer.from(req.query.state, 'base64').toString('utf8') : '')
-    if (stateStr.startsWith('web:') || stateStr.startsWith('mem-web:')) {
-      return res.redirect(`${WEB_BASE_ERR}/dashboard/calendar?error=server_error`)
+    const WEB_BASE_ERR = process.env.WEB_APP_URL ?? 'https://klockn.com'
+    try {
+      const rawState = typeof req.query.state === 'string' ? Buffer.from(req.query.state, 'base64').toString('utf8') : ''
+      if (rawState.startsWith('web:') || rawState.startsWith('mem-web:')) {
+        return res.redirect(`${WEB_BASE_ERR}/dashboard/calendar?error=server_error`)
+      }
+    } catch {
+      // state unreadable — fall through to mobile
     }
     return res.redirect(`${MOBILE_DEEP_LINK}?success=false&error=server_error`)
   }
