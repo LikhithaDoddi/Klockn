@@ -1,0 +1,54 @@
+{
+  "cli": {
+    "version": ">= 10.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://18.117.102.238:4000",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBE3tSVa1atT-Ym7VG3ao3ZqTmohC0qItM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "klockn-80398.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "klockn-80398",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "klockn-80398.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "439208454942",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:439208454942:web:f3bc6c9095cc58155f770f"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://18.117.102.238:4000",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBE3tSVa1atT-Ym7VG3ao3ZqTmohC0qItM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "klockn-80398.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "klockn-80398",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "klockn-80398.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "439208454942",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:439208454942:web:f3bc6c9095cc58155f770f"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.klockn.com",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBE3tSVa1atT-Ym7VG3ao3ZqTmohC0qItM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "klockn-80398.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "klockn-80398",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "klockn-80398.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "439208454942",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:439208454942:web:f3bc6c9095cc58155f770f"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
