@@ -87,6 +87,7 @@ calendarRouter.get('/google/connect', requireAuth, async (req, res) => {
 // Google redirects here — exchange code for tokens, store encrypted, deep-link back into app or web
 calendarRouter.get('/google/callback', async (req, res) => {
   const { code, state, error } = req.query
+  logger.info('OAuth callback received', { hasCode: !!code, hasState: !!state, hasError: !!error })
   const MOBILE_DEEP_LINK = 'klockn://calendar/callback'
   const WEB_REDIRECT = `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/onboarding`
 
@@ -127,9 +128,11 @@ calendarRouter.get('/google/callback', async (req, res) => {
     }
 
     oauth2Client.setCredentials(tokens)
+    logger.info('OAuth tokens exchanged, fetching user info')
     const oauth2Api = google.oauth2({ version: 'v2', auth: oauth2Client })
     const { data: userInfo } = await oauth2Api.userinfo.get()
     const encryptedToken = encrypt(tokens.refresh_token)
+    logger.info('User info fetched, writing to DB', { email: userInfo.email, isMember })
 
     if (isMember) {
       // Store member calendar connection
