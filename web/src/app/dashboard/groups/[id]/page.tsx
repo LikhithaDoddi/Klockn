@@ -96,6 +96,15 @@ export default function GroupPage() {
       <div className="flex items-center gap-4">
         <button onClick={() => router.back()} className="text-sm text-[#71717A] hover:text-[#09090B]">← Back</button>
         <h1 className="text-2xl font-bold text-[#09090B] flex-1">{group.name}</h1>
+        <button
+          onClick={() => router.push(`/dashboard/groups/${id}/chat`)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white text-sm font-semibold hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all shadow-[0_4px_12px_rgba(124,58,237,0.3)] hover:-translate-y-px"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1l1.26 3.78L12 7l-3.74 1.82L7 13l-1.26-3.78L2 7l3.74-1.82L7 1z" fill="white" fillOpacity="0.9"/>
+          </svg>
+          Ask AI
+        </button>
       </div>
 
       {/* Invite */}
