@@ -1,6 +1,4 @@
-// Event creation wizard — Step 1 of the Klockn core flow
-// Organizer fills in event details and uploads attendee list
-// On submit → POST /api/events → redirects to /events/[id]/waiting
+export const dynamic = 'force-dynamic'
 
 export default function CreateEventPage() {
   return (
