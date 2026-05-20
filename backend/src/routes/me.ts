@@ -68,18 +68,90 @@ meRouter.get('/calendar', async (req, res) => {
     const conn = await getDb()
       .selectFrom('organizer_calendar_connections')
       .innerJoin('organizers', 'organizers.id', 'organizer_calendar_connections.organizer_id')
-      .select(['organizer_calendar_connections.email'])
+      .select(['organizer_calendar_connections.email', 'organizer_calendar_connections.selected_calendar_ids'])
       .where('organizers.firebase_uid', '=', req.user!.uid)
       .where('organizer_calendar_connections.provider', '=', 'google')
       .executeTakeFirst()
 
     return res.json({
       success: true,
-      data: { connected: !!conn, email: conn?.email ?? null },
+      data: {
+        connected: !!conn,
+        email: conn?.email ?? null,
+        selectedCalendarIds: conn?.selected_calendar_ids ?? null,
+      },
     })
   } catch (err) {
     logger.error('Failed to get calendar status', { error: err instanceof Error ? err.message : String(err) })
     return res.status(500).json({ success: false, error: 'Failed to get calendar status' })
+  }
+})
+
+// List all Google calendars for the current user
+meRouter.get('/calendars', async (req, res) => {
+  try {
+    const row = await getDb()
+      .selectFrom('organizer_calendar_connections')
+      .innerJoin('organizers', 'organizers.id', 'organizer_calendar_connections.organizer_id')
+      .select(['organizer_calendar_connections.refresh_token_encrypted', 'organizer_calendar_connections.selected_calendar_ids'])
+      .where('organizers.firebase_uid', '=', req.user!.uid)
+      .where('organizer_calendar_connections.provider', '=', 'google')
+      .executeTakeFirst()
+
+    if (!row) return res.status(404).json({ success: false, error: 'No calendar connected' })
+
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    )
+    oauth2Client.setCredentials({ refresh_token: decrypt(row.refresh_token_encrypted) })
+
+    const cal = google.calendar({ version: 'v3', auth: oauth2Client })
+    const listRes = await cal.calendarList.list({ minAccessRole: 'reader' })
+    const calendars = (listRes.data.items ?? []).map((c) => ({
+      id: c.id!,
+      name: c.summary ?? c.id!,
+      primary: !!c.primary,
+      color: c.backgroundColor ?? '#7C3AED',
+    }))
+
+    return res.json({
+      success: true,
+      data: { calendars, selectedIds: row.selected_calendar_ids },
+    })
+  } catch (err) {
+    logger.error('Failed to list calendars', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to list calendars' })
+  }
+})
+
+// Save the user's selected calendar IDs
+meRouter.patch('/calendars', async (req, res) => {
+  const { selectedIds } = req.body
+  if (!Array.isArray(selectedIds) || selectedIds.some((id) => typeof id !== 'string')) {
+    return res.status(400).json({ success: false, error: 'selectedIds must be an array of strings' })
+  }
+  try {
+    const organizer = await getDb()
+      .selectFrom('organizers')
+      .select('id')
+      .where('firebase_uid', '=', req.user!.uid)
+      .executeTakeFirst()
+
+    if (!organizer) return res.status(404).json({ success: false, error: 'User not found' })
+
+    await getDb()
+      .updateTable('organizer_calendar_connections')
+      .set({ selected_calendar_ids: selectedIds })
+      .where('organizer_id', '=', organizer.id)
+      .where('provider', '=', 'google')
+      .execute()
+
+    return res.json({ success: true, data: null })
+  } catch (err) {
+    logger.error('Failed to save calendar selection', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to save calendar selection' })
   }
 })
 
@@ -95,7 +167,7 @@ meRouter.get('/availability', async (req, res) => {
     const row = await getDb()
       .selectFrom('organizer_calendar_connections')
       .innerJoin('organizers', 'organizers.id', 'organizer_calendar_connections.organizer_id')
-      .select(['organizer_calendar_connections.refresh_token_encrypted'])
+      .select(['organizer_calendar_connections.refresh_token_encrypted', 'organizer_calendar_connections.selected_calendar_ids'])
       .where('organizers.firebase_uid', '=', req.user!.uid)
       .where('organizer_calendar_connections.provider', '=', 'google')
       .executeTakeFirst()
@@ -114,16 +186,23 @@ meRouter.get('/availability', async (req, res) => {
     const rangeStart = new Date(`${weekStart}T00:00:00.000Z`)
     const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000)
 
+    // Use user-selected calendars, fall back to primary only
+    const calendarIds = row.selected_calendar_ids?.length
+      ? row.selected_calendar_ids
+      : ['primary']
+
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
     const freeBusyRes = await calendar.freebusy.query({
       requestBody: {
         timeMin: rangeStart.toISOString(),
         timeMax: rangeEnd.toISOString(),
-        items: [{ id: 'primary' }],
+        items: calendarIds.map((id) => ({ id })),
       },
     })
 
-    const busyPeriods = freeBusyRes.data.calendars?.primary?.busy ?? []
+    const busyPeriods = calendarIds.flatMap(
+      (id) => freeBusyRes.data.calendars?.[id]?.busy ?? []
+    )
 
     // Convert a local date+hour in the user's timezone to a UTC Date
     function localHourToUTC(dateStr: string, localHour: number): Date {
@@ -146,7 +225,7 @@ meRouter.get('/availability', async (req, res) => {
     for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
       const dayUTC = new Date(rangeStart.getTime() + dayOffset * 24 * 60 * 60 * 1000)
       const localDateStr = dateFmt.format(dayUTC)
-      for (let hour = 7; hour <= 20; hour++) {
+      for (let hour = 0; hour <= 23; hour++) {
         const slotStart = localHourToUTC(localDateStr, hour)
         const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
         const isBusy = busyPeriods.some((p) => {

@@ -8,11 +8,13 @@ import { addDays, format, startOfWeek, isToday } from 'date-fns'
 import { api } from '@/lib/api'
 
 interface Slot { date: string; hour: number; free: boolean }
+interface CalendarItem { id: string; name: string; primary: boolean; color: string }
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function hourLabel(h: number) {
+  if (h === 0) return '12 am'
   if (h === 12) return '12 pm'
   if (h > 12) return `${h - 12} pm`
   return `${h} am`
@@ -25,6 +27,10 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [calendars, setCalendars] = useState<CalendarItem[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [savingCalendars, setSavingCalendars] = useState(false)
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false)
 
   const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd')
   const searchParams = useSearchParams()
@@ -35,20 +41,49 @@ export default function CalendarPage() {
     setLoading(true)
     setError(null)
     try {
-      const statusRes = await api.get<{ success: boolean; data: { connected: boolean; email: string | null } }>('/api/v1/me/calendar')
+      const statusRes = await api.get<{ success: boolean; data: { connected: boolean; email: string | null; selectedCalendarIds: string[] | null } }>('/api/v1/me/calendar')
       setConnected(statusRes.data.data.connected)
       setCalEmail(statusRes.data.data.email)
       if (statusRes.data.data.connected) {
-        const slotsRes = await api.get<{ success: boolean; data: Slot[] }>('/api/v1/me/availability', {
-          params: { weekStart, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        })
+        const [slotsRes, calsRes] = await Promise.all([
+          api.get<{ success: boolean; data: Slot[] }>('/api/v1/me/availability', {
+            params: { weekStart, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          }),
+          api.get<{ success: boolean; data: { calendars: CalendarItem[]; selectedIds: string[] | null } }>('/api/v1/me/calendars'),
+        ])
         setSlots(slotsRes.data.data)
+        const cals = calsRes.data.data.calendars
+        setCalendars(cals)
+        const saved = calsRes.data.data.selectedIds
+        setSelectedIds(new Set(saved ?? cals.map((c) => c.id)))
       }
     } catch {
       setError('Could not load calendar status.')
     } finally {
       setLoading(false)
     }
+  }
+
+  async function saveCalendarSelection(ids: Set<string>) {
+    setSavingCalendars(true)
+    try {
+      await api.patch('/api/v1/me/calendars', { selectedIds: Array.from(ids) })
+      // Reload slots with new selection
+      const slotsRes = await api.get<{ success: boolean; data: Slot[] }>('/api/v1/me/availability', {
+        params: { weekStart, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+      })
+      setSlots(slotsRes.data.data)
+    } catch {
+      setError('Could not save calendar selection.')
+    } finally {
+      setSavingCalendars(false)
+    }
+  }
+
+  function toggleCalendar(id: string) {
+    const next = new Set(selectedIds)
+    if (next.has(id)) { next.delete(id) } else { next.add(id) }
+    setSelectedIds(next)
   }
 
   async function handleConnect() {
@@ -160,11 +195,60 @@ export default function CalendarPage() {
             </div>
           )}
         </div>
-        <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          Connected
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCalendarPicker((v) => !v)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-purple-50 text-[#7C3AED] font-semibold border border-purple-100 hover:bg-purple-100 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="1" y="1" width="4" height="4" rx="1" fill="currentColor"/>
+              <rect x="7" y="1" width="4" height="4" rx="1" fill="currentColor" fillOpacity="0.5"/>
+              <rect x="1" y="7" width="4" height="4" rx="1" fill="currentColor" fillOpacity="0.5"/>
+              <rect x="7" y="7" width="4" height="4" rx="1" fill="currentColor"/>
+            </svg>
+            {selectedIds.size} calendar{selectedIds.size !== 1 ? 's' : ''}
+          </button>
+          <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            Connected
+          </span>
+        </div>
       </div>
+
+      {showCalendarPicker && calendars.length > 0 && (
+        <div className="bg-white rounded-2xl border border-black/8 p-5 flex flex-col gap-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-[#09090B] text-sm">Which calendars count as busy?</p>
+              <p className="text-xs text-[#71717A] mt-0.5">Selected calendars are shown to your groups as busy time.</p>
+            </div>
+          </div>
+          <div className="flex flex-col divide-y divide-black/5">
+            {calendars.map((cal) => (
+              <label key={cal.id} className="flex items-center gap-3 py-2.5 cursor-pointer">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cal.color }} />
+                <span className="flex-1 text-sm text-[#09090B]">
+                  {cal.name}
+                  {cal.primary && <span className="ml-1.5 text-xs text-[#71717A]">(primary)</span>}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(cal.id)}
+                  onChange={() => toggleCalendar(cal.id)}
+                  className="w-4 h-4 rounded accent-[#7C3AED]"
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={() => { saveCalendarSelection(selectedIds); setShowCalendarPicker(false) }}
+            disabled={savingCalendars || selectedIds.size === 0}
+            className="h-10 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white text-sm font-semibold hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all disabled:opacity-50"
+          >
+            {savingCalendars ? 'Saving…' : 'Save selection'}
+          </button>
+        </div>
+      )}
 
       {/* Stats row */}
       {totalTracked > 0 && (
