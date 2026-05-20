@@ -35,3 +35,4 @@ Thumbs.db
 
 # ─── TypeScript ───────────────────────────────
 *.tsbuildinfo
+infra/store-secrets.ps1
