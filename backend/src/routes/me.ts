@@ -155,7 +155,9 @@ meRouter.patch('/calendars', async (req, res) => {
   }
 })
 
-// Returns hourly free/busy slots for the 7-day week starting at weekStart (YYYY-MM-DD, UTC)
+// Returns exact busy periods for the 7-day week starting at weekStart (YYYY-MM-DD in user's local tz)
+// Response: { busyPeriods: { date: string, startMinute: number, endMinute: number }[] }
+// date is YYYY-MM-DD in user's timezone, minutes are from midnight in user's timezone
 meRouter.get('/availability', async (req, res) => {
   const { weekStart, timezone } = req.query
   if (!weekStart || typeof weekStart !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
@@ -183,12 +185,13 @@ meRouter.get('/availability', async (req, res) => {
     )
     oauth2Client.setCredentials({ refresh_token: decrypt(row.refresh_token_encrypted) })
 
+    // Query one extra day on each side so timezone shifts don't clip events
     const rangeStart = new Date(`${weekStart}T00:00:00.000Z`)
-    const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+    rangeStart.setUTCDate(rangeStart.getUTCDate() - 1)
+    const rangeEnd = new Date(rangeStart.getTime() + 9 * 24 * 60 * 60 * 1000)
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
 
-    // Always fetch all calendars — use saved selection or all available
     let calendarIds: string[]
     if (row.selected_calendar_ids?.length) {
       calendarIds = row.selected_calendar_ids
@@ -206,46 +209,46 @@ meRouter.get('/availability', async (req, res) => {
       },
     })
 
-    const busyPeriods = calendarIds.flatMap(
-      (id) => freeBusyRes.data.calendars?.[id]?.busy ?? []
-    )
+    const rawBusy = calendarIds.flatMap((id) => freeBusyRes.data.calendars?.[id]?.busy ?? [])
 
-    // Convert a local date+time in the user's timezone to UTC
-    function localTimeToUTC(dateStr: string, localHour: number, localMinute: number): Date {
-      const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:${String(localMinute).padStart(2, '0')}:00Z`)
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false,
-      }).formatToParts(candidate)
-      const localH = parseInt(parts.find((p) => p.type === 'hour')!.value)
-      const localM = parseInt(parts.find((p) => p.type === 'minute')!.value)
-      const driftMs = ((localHour - localH) * 60 + (localMinute - localM)) * 60 * 1000
-      return new Date(candidate.getTime() + driftMs)
-    }
-
-    const dateFmt = new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    // Extract local date + minute from a UTC Date in the user's timezone
+    const localPartsFmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
     })
 
-    const slots: { date: string; time: string; free: boolean }[] = []
-    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-      const dayUTC = new Date(rangeStart.getTime() + dayOffset * 24 * 60 * 60 * 1000)
-      const localDateStr = dateFmt.format(dayUTC)
-      for (let hour = 0; hour <= 23; hour++) {
-        for (const minute of [0, 30]) {
-          const slotStart = localTimeToUTC(localDateStr, hour, minute)
-          const slotEnd = new Date(slotStart.getTime() + 30 * 60 * 1000)
-          const isBusy = busyPeriods.some((p) => {
-            const bStart = new Date(p.start!)
-            const bEnd = new Date(p.end!)
-            return bStart < slotEnd && bEnd > slotStart
-          })
-          const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-          slots.push({ date: localDateStr, time: timeStr, free: !isBusy })
-        }
+    function toLocalDateMinute(d: Date): { date: string; minute: number } {
+      const parts = localPartsFmt.formatToParts(d)
+      const get = (t: string) => parts.find((p) => p.type === t)!.value
+      const h = parseInt(get('hour'))
+      const m = parseInt(get('minute'))
+      // hour12:false can return '24' for midnight — normalise
+      return {
+        date: `${get('year')}-${get('month')}-${get('day')}`,
+        minute: (h === 24 ? 0 : h) * 60 + m,
       }
     }
 
-    return res.json({ success: true, data: slots })
+    const busyPeriods: { date: string; startMinute: number; endMinute: number }[] = []
+
+    for (const p of rawBusy) {
+      if (!p.start || !p.end) continue
+      const bStart = new Date(p.start)
+      const bEnd = new Date(p.end)
+      const start = toLocalDateMinute(bStart)
+      const end = toLocalDateMinute(bEnd)
+
+      if (start.date === end.date) {
+        busyPeriods.push({ date: start.date, startMinute: start.minute, endMinute: end.minute })
+      } else {
+        // Spans midnight — split into two entries
+        busyPeriods.push({ date: start.date, startMinute: start.minute, endMinute: 1440 })
+        busyPeriods.push({ date: end.date, startMinute: 0, endMinute: end.minute })
+      }
+    }
+
+    return res.json({ success: true, data: { busyPeriods } })
   } catch (err) {
     logger.error('Failed to fetch availability', { error: err instanceof Error ? err.message : String(err) })
     return res.status(500).json({ success: false, error: 'Failed to fetch availability' })
