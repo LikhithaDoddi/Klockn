@@ -186,12 +186,18 @@ meRouter.get('/availability', async (req, res) => {
     const rangeStart = new Date(`${weekStart}T00:00:00.000Z`)
     const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-    // Use user-selected calendars, fall back to primary only
-    const calendarIds = row.selected_calendar_ids?.length
-      ? row.selected_calendar_ids
-      : ['primary']
-
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+
+    // Always fetch all calendars — use saved selection or all available
+    let calendarIds: string[]
+    if (row.selected_calendar_ids?.length) {
+      calendarIds = row.selected_calendar_ids
+    } else {
+      const listRes = await calendar.calendarList.list({ minAccessRole: 'reader' })
+      calendarIds = (listRes.data.items ?? []).map((c) => c.id!).filter(Boolean)
+      if (calendarIds.length === 0) calendarIds = ['primary']
+    }
+
     const freeBusyRes = await calendar.freebusy.query({
       requestBody: {
         timeMin: rangeStart.toISOString(),
@@ -204,16 +210,15 @@ meRouter.get('/availability', async (req, res) => {
       (id) => freeBusyRes.data.calendars?.[id]?.busy ?? []
     )
 
-    // Convert a local date+hour in the user's timezone to a UTC Date
-    function localHourToUTC(dateStr: string, localHour: number): Date {
-      // Probe: treat the hour as if it were UTC, then measure the drift
-      const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:00:00Z`)
+    // Convert a local date+time in the user's timezone to UTC
+    function localTimeToUTC(dateStr: string, localHour: number, localMinute: number): Date {
+      const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:${String(localMinute).padStart(2, '0')}:00Z`)
       const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false,
       }).formatToParts(candidate)
       const localH = parseInt(parts.find((p) => p.type === 'hour')!.value)
       const localM = parseInt(parts.find((p) => p.type === 'minute')!.value)
-      const driftMs = ((localHour - localH) * 60 - localM) * 60 * 1000
+      const driftMs = ((localHour - localH) * 60 + (localMinute - localM)) * 60 * 1000
       return new Date(candidate.getTime() + driftMs)
     }
 
@@ -221,19 +226,22 @@ meRouter.get('/availability', async (req, res) => {
       timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
     })
 
-    const slots: { date: string; hour: number; free: boolean }[] = []
+    const slots: { date: string; time: string; free: boolean }[] = []
     for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
       const dayUTC = new Date(rangeStart.getTime() + dayOffset * 24 * 60 * 60 * 1000)
       const localDateStr = dateFmt.format(dayUTC)
       for (let hour = 0; hour <= 23; hour++) {
-        const slotStart = localHourToUTC(localDateStr, hour)
-        const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
-        const isBusy = busyPeriods.some((p) => {
-          const bStart = new Date(p.start!)
-          const bEnd = new Date(p.end!)
-          return bStart < slotEnd && bEnd > slotStart
-        })
-        slots.push({ date: localDateStr, hour, free: !isBusy })
+        for (const minute of [0, 30]) {
+          const slotStart = localTimeToUTC(localDateStr, hour, minute)
+          const slotEnd = new Date(slotStart.getTime() + 30 * 60 * 1000)
+          const isBusy = busyPeriods.some((p) => {
+            const bStart = new Date(p.start!)
+            const bEnd = new Date(p.end!)
+            return bStart < slotEnd && bEnd > slotStart
+          })
+          const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+          slots.push({ date: localDateStr, time: timeStr, free: !isBusy })
+        }
       }
     }
 
