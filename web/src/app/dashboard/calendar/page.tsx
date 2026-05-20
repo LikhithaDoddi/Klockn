@@ -40,7 +40,7 @@ export default function CalendarPage() {
       setCalEmail(statusRes.data.data.email)
       if (statusRes.data.data.connected) {
         const slotsRes = await api.get<{ success: boolean; data: Slot[] }>('/api/v1/me/availability', {
-          params: { weekStart },
+          params: { weekStart, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         })
         setSlots(slotsRes.data.data)
       }

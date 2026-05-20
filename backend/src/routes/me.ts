@@ -85,10 +85,11 @@ meRouter.get('/calendar', async (req, res) => {
 
 // Returns hourly free/busy slots for the 7-day week starting at weekStart (YYYY-MM-DD, UTC)
 meRouter.get('/availability', async (req, res) => {
-  const { weekStart } = req.query
+  const { weekStart, timezone } = req.query
   if (!weekStart || typeof weekStart !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
     return res.status(400).json({ success: false, error: 'weekStart must be YYYY-MM-DD' })
   }
+  const tz = typeof timezone === 'string' ? timezone : 'UTC'
 
   try {
     const row = await getDb()
@@ -124,23 +125,36 @@ meRouter.get('/availability', async (req, res) => {
 
     const busyPeriods = freeBusyRes.data.calendars?.primary?.busy ?? []
 
-    // Build hourly slots 7am–8pm UTC for each of the 7 days
+    // Convert a local date+hour in the user's timezone to a UTC Date
+    function localHourToUTC(dateStr: string, localHour: number): Date {
+      // Probe: treat the hour as if it were UTC, then measure the drift
+      const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:00:00Z`)
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false,
+      }).formatToParts(candidate)
+      const localH = parseInt(parts.find((p) => p.type === 'hour')!.value)
+      const localM = parseInt(parts.find((p) => p.type === 'minute')!.value)
+      const driftMs = ((localHour - localH) * 60 - localM) * 60 * 1000
+      return new Date(candidate.getTime() + driftMs)
+    }
+
+    const dateFmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    })
+
     const slots: { date: string; hour: number; free: boolean }[] = []
     for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-      const dayStart = new Date(rangeStart.getTime() + dayOffset * 24 * 60 * 60 * 1000)
-      const dateStr = dayStart.toISOString().slice(0, 10)
+      const dayUTC = new Date(rangeStart.getTime() + dayOffset * 24 * 60 * 60 * 1000)
+      const localDateStr = dateFmt.format(dayUTC)
       for (let hour = 7; hour <= 20; hour++) {
-        const slotStart = new Date(dayStart)
-        slotStart.setUTCHours(hour, 0, 0, 0)
+        const slotStart = localHourToUTC(localDateStr, hour)
         const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
-
         const isBusy = busyPeriods.some((p) => {
           const bStart = new Date(p.start!)
           const bEnd = new Date(p.end!)
           return bStart < slotEnd && bEnd > slotStart
         })
-
-        slots.push({ date: dateStr, hour, free: !isBusy })
+        slots.push({ date: localDateStr, hour, free: !isBusy })
       }
     }
 
