@@ -50,7 +50,8 @@ export default function GroupPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [load])
 
-  async function handleRemoveMember(memberId: string) {
+  async function handleRemoveMember(memberId: string, memberLabel: string) {
+    if (!confirm(`Remove ${memberLabel} from this group?`)) return
     setRemovingId(memberId)
     try {
       await api.delete(`/api/v1/groups/${id}/members/${memberId}`)
@@ -190,7 +191,7 @@ export default function GroupPage() {
                   {m.status === 'calendar_connected' ? 'Calendar connected' : 'Invited'}
                 </span>
                 <button
-                  onClick={() => handleRemoveMember(m.id)}
+                  onClick={() => handleRemoveMember(m.id, m.name ?? m.email)}
                   disabled={removingId === m.id}
                   className="ml-1 p-1.5 rounded-lg text-[#A1A1AA] hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
                   title="Remove member"
