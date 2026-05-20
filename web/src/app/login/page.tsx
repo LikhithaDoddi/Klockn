@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithGoogle, auth } from '@/lib/firebase'
+import { signInWithGoogle, auth, resetPassword } from '@/lib/firebase'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
@@ -13,12 +13,13 @@ import { KlocknMark } from '@/components/KlocknLogo'
 export default function LoginPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resetSent, setResetSent] = useState(false)
 
   useEffect(() => {
     if (!loading && user) router.replace('/onboarding')
@@ -53,6 +54,20 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email.trim(), password)
       }
       router.replace('/onboarding')
+    } catch (e) {
+      setError(friendlyError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleReset() {
+    if (!email.trim()) { setError('Enter your email address first.'); return }
+    setError(null)
+    setBusy(true)
+    try {
+      await resetPassword(email.trim())
+      setResetSent(true)
     } catch (e) {
       setError(friendlyError(e))
     } finally {
@@ -116,6 +131,69 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
           </div>
 
+          {mode === 'reset' ? (
+            <div className="flex flex-col gap-4">
+              {resetSent ? (
+                <div className="flex flex-col items-center gap-3 py-2 text-center">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path d="M20 6L9 17l-5-5" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-[#09090B]">Check your email</p>
+                  <p className="text-sm text-[#71717A]">We sent a reset link to <strong>{email}</strong></p>
+                  <button
+                    onClick={() => { setMode('login'); setResetSent(false) }}
+                    className="text-sm font-semibold text-[#7C3AED] hover:text-[#6D28D9] transition-colors mt-1"
+                  >
+                    Back to sign in
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {error && (
+                    <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                        <circle cx="8" cy="8" r="7" stroke="#EF4444" strokeWidth="1.5"/>
+                        <path d="M8 5v3.5M8 11h.01" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                      {error}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[#09090B] uppercase tracking-wide">Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleReset()}
+                      placeholder="you@example.com"
+                      autoFocus
+                      className="h-11 rounded-xl border-2 border-black/8 bg-white/80 px-4 text-sm focus:outline-none focus:border-[#7C3AED] focus:bg-white transition-all placeholder:text-[#A1A1AA]"
+                    />
+                  </div>
+                  <button
+                    onClick={handleReset}
+                    disabled={busy}
+                    className="h-12 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white font-semibold hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all disabled:opacity-50 shadow-[0_4px_16px_rgba(124,58,237,0.3)] text-sm"
+                  >
+                    {busy ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        Sending…
+                      </span>
+                    ) : 'Send reset link'}
+                  </button>
+                  <button
+                    onClick={() => { setMode('login'); setError(null) }}
+                    className="text-sm text-[#71717A] hover:text-[#09090B] transition-colors text-center font-medium"
+                  >
+                    Back to sign in
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
           <div className="flex flex-col gap-4">
             {mode === 'signup' && (
               <div className="flex flex-col gap-1.5">
@@ -141,7 +219,18 @@ export default function LoginPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#09090B] uppercase tracking-wide">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-[#09090B] uppercase tracking-wide">Password</label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => { setMode('reset'); setError(null); setResetSent(false) }}
+                    className="text-xs text-[#7C3AED] hover:text-[#6D28D9] font-medium transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <input
                 type="password"
                 value={password}
@@ -165,17 +254,20 @@ export default function LoginPage() {
               ) : mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
           </div>
+          )}
         </div>
 
-        <p className="text-center text-sm text-[#71717A] mt-5">
-          {mode === 'login' ? "New to Klockn? " : 'Already have an account? '}
-          <button
-            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}
-            className="font-semibold text-[#7C3AED] hover:text-[#6D28D9] transition-colors"
-          >
-            {mode === 'login' ? 'Create account' : 'Sign in'}
-          </button>
-        </p>
+        {mode !== 'reset' && (
+          <p className="text-center text-sm text-[#71717A] mt-5">
+            {mode === 'login' ? "New to Klockn? " : 'Already have an account? '}
+            <button
+              onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}
+              className="font-semibold text-[#7C3AED] hover:text-[#6D28D9] transition-colors"
+            >
+              {mode === 'login' ? 'Create account' : 'Sign in'}
+            </button>
+          </p>
+        )}
       </div>
     </div>
   )
