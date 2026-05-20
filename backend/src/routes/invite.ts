@@ -65,7 +65,11 @@ inviteRouter.get('/:token/connect-calendar', async (req, res) => {
     const url = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
-      scope: ['https://www.googleapis.com/auth/calendar.readonly'],
+      scope: [
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ],
       state: Buffer.from(statePayload).toString('base64'),
     })
 
