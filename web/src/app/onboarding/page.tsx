@@ -39,7 +39,7 @@ function OnboardingContent() {
   const [connectError, setConnectError] = useState<string | null>(null)
 
   const [groupName, setGroupName] = useState('')
-  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteEmails, setInviteEmails] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
 
@@ -77,16 +77,19 @@ function OnboardingContent() {
   }
 
   async function handleInvite() {
-    if (!groupName.trim() || !inviteEmail.trim()) return
+    if (!groupName.trim()) return
+    const emails = inviteEmails
+      .split(/[\s,;]+/)
+      .map((e) => e.trim())
+      .filter((e) => e.includes('@'))
+    if (emails.length === 0) return
     setSubmitting(true)
     setInviteError(null)
     try {
       const groupRes = await api.post<{ success: boolean; data: { id: string } }>('/api/v1/groups', {
         name: groupName.trim(),
       })
-      await api.post(`/api/v1/groups/${groupRes.data.data.id}/invite`, {
-        emails: [inviteEmail.trim()],
-      })
+      await api.post(`/api/v1/groups/${groupRes.data.data.id}/invite`, { emails })
       router.replace('/dashboard')
     } catch {
       setInviteError('Something went wrong. Try again or skip for now.')
@@ -251,20 +254,19 @@ function OnboardingContent() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-[#09090B] uppercase tracking-wide">Invite someone</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
-                  placeholder="friend@example.com"
-                  className="h-11 rounded-xl border-2 border-black/8 bg-white/80 px-4 text-sm focus:outline-none focus:border-[#7C3AED] focus:bg-white transition-all placeholder:text-[#A1A1AA]"
+                <label className="text-xs font-semibold text-[#09090B] uppercase tracking-wide">Invite people</label>
+                <textarea
+                  value={inviteEmails}
+                  onChange={(e) => setInviteEmails(e.target.value)}
+                  placeholder={"friend@example.com, colleague@example.com\n(separate by comma or newline)"}
+                  rows={3}
+                  className="rounded-xl border-2 border-black/8 bg-white/80 px-4 py-3 text-sm focus:outline-none focus:border-[#7C3AED] focus:bg-white transition-all placeholder:text-[#A1A1AA] resize-none"
                 />
               </div>
 
               <button
                 onClick={handleInvite}
-                disabled={submitting || !groupName.trim() || !inviteEmail.trim()}
+                disabled={submitting || !groupName.trim() || !inviteEmails.trim()}
                 className="h-12 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white font-semibold hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all shadow-[0_4px_16px_rgba(124,58,237,0.3)] disabled:opacity-50 text-sm"
               >
                 {submitting ? (

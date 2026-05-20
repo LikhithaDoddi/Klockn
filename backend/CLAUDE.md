@@ -6,72 +6,45 @@ I am the Backend Engineer for Klockn. I build and own the Node.js API server, Po
 ## Read First
 Before anything else, read the root `CLAUDE.md`. Every rule there applies to me. The "explain before you code" protocol is mandatory — no exceptions.
 
-## My Mission for the 4-Day Sprint
-Build a reliable, fast API deployed on AWS ECS Fargate that the mobile app can reach from anywhere. PostgreSQL on AWS RDS. Redis on AWS ElastiCache. Every endpoint the mobile needs — ready on time.
+## Status
+**Production. The API is live and serving real users on AWS ECS Fargate.**
 
-**Day 1 — Foundation**
-- Dockerfile written and tested locally
-- Express server running locally, connects to AWS RDS PostgreSQL
-- Firebase Admin initialized, JWT verification working
-- `/health` endpoint returns 200
-- `GET /api/v1/me` returns authenticated user profile
-- GitHub Actions workflow deploys to AWS ECS Fargate on push to `agent/backend`
-- All environment variables stored in AWS Secrets Manager
-
-**Day 2 — Auth + Calendar Shell**
-- `POST /api/v1/users` — create user profile after Firebase signup
-- `GET /api/v1/me` — return full user profile
-- Calendar router shell in place for AI engineer
-- Zod validation on all request bodies
-
-**Day 3 — Groups + Availability**
-- `POST /api/v1/groups` — create group
-- `GET /api/v1/groups` — list user's groups
-- `GET /api/v1/groups/:id` — group + member availability
-- `POST /api/v1/groups/:id/invite` — send invite, create attendee record
-- `GET /api/v1/calendar/availability/:groupId` — aggregate busy slots
-- BullMQ worker running, connected to AWS ElastiCache for Redis
-
-**Day 4 — Notifications + Polish**
-- `PATCH /api/v1/me/push-token` — store Expo push token
-- `POST /api/v1/internal/notify-group` — internal endpoint for AI service
-- Rate limiting verified, error responses consistent
-- CloudWatch logs clean, no unhandled rejections
+- No breaking API changes without versioning or a migration plan
+- Database schema changes require a migration script — never alter tables manually in production
+- Rolling deploys only — never cause downtime
+- Monitor Coralogix logs after every deploy
 
 ## Infrastructure — AWS
 
-### AWS ECS Fargate (backend compute)
-Serverless containers — no EC2 instances to manage. Push a Docker image to ECR, deploy to ECS Fargate. Auto-scales. Built-in load balancing via ALB. HTTPS via ACM certificate.
+### AWS ECS Fargate (compute)
+Serverless containers. Docker image → ECR → ECS Fargate. Auto-scales. HTTPS via ALB + ACM.
 
-### AWS RDS PostgreSQL
-Fully managed PostgreSQL. Automated backups. Point-in-time restore. SSL enforced. Free tier covers db.t3.micro for the sprint.
-**Connection:** Always set `sslmode=require` in connection string.
+### AWS RDS PostgreSQL (database)
+Fully managed PostgreSQL. SSL enforced. Automated backups. Point-in-time restore available.
+**Connection:** Always `sslmode=require` in connection string.
 
-### AWS ElastiCache for Redis
-Managed Redis for BullMQ job queue. cache.t3.micro covers the sprint. Same VPC as ECS.
+### AWS ElastiCache for Redis (job queue)
+Managed Redis for BullMQ. Same VPC as ECS.
 
-### AWS Secrets Manager
-All secrets live here — never in environment variables or `.env` files in production. ECS task definition pulls secrets from Secrets Manager at runtime.
+### AWS Secrets Manager (secrets)
+All secrets live here in production. ECS task definition pulls at runtime. Never in `.env` in production.
 
-### AWS S3
-Waitlist CSV exports, profile images, any file storage.
+### AWS S3 (file storage)
+CSV exports, profile images.
 
-### AWS SES (Simple Email Service)
-Transactional email — invite emails, confirmations.
+### AWS SES (email)
+Transactional email — invite emails, confirmations. Sending domain: `klockn.com`.
 
-### AWS ECR (Elastic Container Registry)
-Stores Docker images. GitHub Actions builds and pushes here on every deploy.
+### AWS ECR (container registry)
+Stores Docker images. GitHub Actions builds and pushes on every deploy.
 
-### CloudWatch
-Logs and metrics. ECS containers stream logs to CloudWatch automatically.
+### Coralogix (observability)
+All logs stream here. Check after every production deploy.
 
 ## Folder Structure I Own
 ```
 backend/
-├── Dockerfile                  # Multi-stage build for AWS ECS Fargate
-├── .github/
-│   └── workflows/
-│       └── deploy-backend.yml  # GitHub Actions → AWS ECS Fargate
+├── Dockerfile
 ├── src/
 │   ├── index.ts
 │   ├── middleware/
@@ -79,24 +52,29 @@ backend/
 │   │   ├── validate.ts         # Zod request validation
 │   │   └── rateLimit.ts
 │   ├── routes/
+│   │   ├── me.ts
 │   │   ├── users.ts
-│   │   ├── groups.ts
+│   │   ├── groups.ts           # Groups + member management
+│   │   ├── events.ts
 │   │   ├── calendar.ts         # SHELL ONLY — AI engineer implements
+│   │   ├── ai.ts               # Proxies to AI service
 │   │   ├── tickets.ts
-│   │   └── webhooks.ts
+│   │   ├── invite.ts
+│   │   ├── webhooks.ts
+│   │   └── internal.ts
 │   ├── db/
-│   │   ├── client.ts           # Kysely + AWS RDS PostgreSQL
-│   │   ├── types.ts
-│   │   └── migrations/
+│   │   ├── client.ts           # Kysely + RDS PostgreSQL
+│   │   └── types.ts
+│   ├── migrations/
 │   ├── jobs/
-│   │   ├── queues.ts           # BullMQ + AWS ElastiCache Redis
+│   │   ├── queues.ts           # BullMQ + ElastiCache Redis
 │   │   ├── worker.ts
-│   │   ├── calendarSync.ts
-│   │   └── sendInviteEmail.ts  # AWS SES client
+│   │   └── sendInviteEmail.ts
 │   └── lib/
 │       ├── firebase.ts
+│       ├── logger.ts           # Winston logger
 │       ├── email.ts            # AWS SES client
-│       ├── storage.ts          # AWS S3 client
+│       ├── encrypt.ts          # AES-256-GCM for calendar tokens
 │       └── stripe.ts
 └── .env.example
 ```
@@ -119,9 +97,8 @@ EXPOSE 4000
 CMD ["node", "dist/index.js"]
 ```
 
-## GitHub Actions — Auto Deploy to AWS ECS Fargate
+## GitHub Actions — Deploy to AWS ECS Fargate
 ```yaml
-# .github/workflows/deploy-backend.yml
 name: Deploy Backend
 on:
   push:
@@ -157,50 +134,55 @@ jobs:
             --force-new-deployment
 ```
 
-## Environment Variables (AWS Secrets Manager)
+## Environment Variables (AWS Secrets Manager in production)
 ```
-DATABASE_URL          # AWS RDS PostgreSQL connection string (SSL required)
+DATABASE_URL          # RDS PostgreSQL connection string (sslmode=require)
 FIREBASE_PROJECT_ID
 FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
-REDIS_URL             # AWS ElastiCache Redis connection string
-AWS_SES_REGION        # us-east-1
-AWS_S3_BUCKET         # klockn-storage
+REDIS_URL             # ElastiCache Redis connection string
+AWS_SES_REGION=us-east-1
+AWS_S3_BUCKET=klockn-storage
+EMAIL_FROM=noreply@klockn.com
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
+STRIPE_PLATFORM_FEE_PERCENT=2
 AI_SERVICE_URL        # Internal URL to AI ECS service
 AI_SERVICE_SECRET
+ENCRYPTION_KEY        # AES-256-GCM key for calendar tokens
+WEB_APP_URL=https://klockn.com
 PORT=4000
 NODE_ENV=production
 ```
 
-## AWS RDS PostgreSQL Connection (Kysely)
-```typescript
-import { Kysely, PostgresDialect } from 'kysely'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true }, // RDS requires SSL
-  max: 10,
-})
-
-export const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
-```
-
 ## API Response Standard
 ```typescript
-// Success
 { "success": true, "data": { ...payload } }
-// Error
 { "success": false, "error": "Human readable message" }
 ```
 
+## Current API Surface
+```
+GET  /health
+GET  /api/v1/me
+PATCH /api/v1/me/push-token
+POST /api/v1/groups
+GET  /api/v1/groups
+GET  /api/v1/groups/:id
+POST /api/v1/groups/:id/invite
+DELETE /api/v1/groups/:id/members/:memberId
+DELETE /api/v1/groups/:id
+GET  /api/v1/calendar/google/connect
+GET  /api/v1/calendar/google/callback
+POST /api/v1/ai/chat
+```
+
 ## Definition of Done
-- [ ] Endpoint tested with Postman — returns correct shape
+- [ ] Endpoint tested with curl/Postman — returns correct shape
 - [ ] Auth required on protected routes — returns 401 without token
 - [ ] Zod validation rejects bad input — returns 400
 - [ ] TypeScript strict — zero `any`
 - [ ] Docker builds locally without errors
-- [ ] Deployed to AWS ECS Fargate and reachable from mobile
+- [ ] Deployed to AWS ECS Fargate and healthy in Coralogix
+- [ ] No regressions in existing endpoints
 - [ ] PR opened with curl examples in the description
