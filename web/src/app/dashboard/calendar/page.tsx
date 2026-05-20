@@ -7,7 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { addDays, format, startOfWeek, isToday, subWeeks, addWeeks } from 'date-fns'
 import { api } from '@/lib/api'
 
-interface Slot { date: string; time: string; free: boolean }
+interface BusyPeriod { date: string; startMinute: number; endMinute: number }
 interface CalendarItem { id: string; name: string; primary: boolean; color: string }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -37,7 +37,7 @@ function CalendarContent() {
   const searchParams = useSearchParams()
   const [connected, setConnected] = useState<boolean | null>(null)
   const [calEmail, setCalEmail] = useState<string | null>(null)
-  const [slots, setSlots] = useState<Slot[]>([])
+  const [busyPeriods, setBusyPeriods] = useState<BusyPeriod[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,12 +62,12 @@ function CalendarContent() {
       setCalEmail(statusRes.data.data.email)
       if (statusRes.data.data.connected) {
         const [slotsRes, calsRes] = await Promise.all([
-          api.get<{ success: boolean; data: Slot[] }>('/api/v1/me/availability', {
+          api.get<{ success: boolean; data: { busyPeriods: BusyPeriod[] } }>('/api/v1/me/availability', {
             params: { weekStart, timezone: tz },
           }),
           api.get<{ success: boolean; data: { calendars: CalendarItem[]; selectedIds: string[] | null } }>('/api/v1/me/calendars'),
         ])
-        setSlots(slotsRes.data.data)
+        setBusyPeriods(slotsRes.data.data.busyPeriods)
         const cals = calsRes.data.data.calendars
         setCalendars(cals)
         const saved = calsRes.data.data.selectedIds
@@ -84,10 +84,10 @@ function CalendarContent() {
     setSavingCalendars(true)
     try {
       await api.patch('/api/v1/me/calendars', { selectedIds: Array.from(ids) })
-      const slotsRes = await api.get<{ success: boolean; data: Slot[] }>('/api/v1/me/availability', {
+      const slotsRes = await api.get<{ success: boolean; data: { busyPeriods: BusyPeriod[] } }>('/api/v1/me/availability', {
         params: { weekStart, timezone: tz },
       })
-      setSlots(slotsRes.data.data)
+      setBusyPeriods(slotsRes.data.data.busyPeriods)
     } catch {
       setError('Could not save calendar selection.')
     } finally {
@@ -151,7 +151,14 @@ function CalendarContent() {
     return { label: DAY_LABELS[d.getDay()], date: format(d, 'yyyy-MM-dd'), num: format(d, 'd'), today: isToday(d) }
   })
 
-  const slotMap = new Map(slots.map((s) => [`${s.date}-${s.time}`, s.free]))
+  function isSlotBusy(date: string, time: string): boolean {
+    const [h, m] = time.split(':').map(Number)
+    const slotStart = h * 60 + m
+    const slotEnd = slotStart + 30
+    return busyPeriods.some(
+      (p) => p.date === date && p.startMinute < slotEnd && p.endMinute > slotStart
+    )
+  }
 
   const weekLabel = (() => {
     const start = addDays(new Date(weekStart + 'T00:00:00'), 0)
@@ -274,8 +281,7 @@ function CalendarContent() {
                   )}
                 </div>
                 {days.map((d) => {
-                  const free = slotMap.get(`${d.date}-${time}`)
-                  const isBusy = free === false
+                  const isBusy = isSlotBusy(d.date, time)
                   return (
                     <div key={d.date}
                       className={`border-l border-black/5 ${isHour ? 'h-8 border-t border-black/5' : 'h-6'} ${
