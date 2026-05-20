@@ -94,6 +94,7 @@ export interface OrganizerCalendarConnectionsTable {
   provider: ColumnType<'google', 'google' | undefined, 'google'>
   email: string | null
   refresh_token_encrypted: string
+  selected_calendar_ids: string[] | null
   connected_at: ColumnType<Date, never, never>
   last_synced_at: Date | null
 }

@@ -73,7 +73,11 @@ calendarRouter.get('/google/connect', requireAuth, async (req, res) => {
     const url = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
-      scope: ['https://www.googleapis.com/auth/calendar.readonly'],
+      scope: [
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+      ],
       state: Buffer.from(rawState).toString('base64'),
     })
 
@@ -87,6 +91,7 @@ calendarRouter.get('/google/connect', requireAuth, async (req, res) => {
 // Google redirects here — exchange code for tokens, store encrypted, deep-link back into app or web
 calendarRouter.get('/google/callback', async (req, res) => {
   const { code, state, error } = req.query
+  logger.info('OAuth callback received', { hasCode: !!code, hasState: !!state, hasError: !!error })
   const MOBILE_DEEP_LINK = 'klockn://calendar/callback'
   const WEB_REDIRECT = `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/onboarding`
 
@@ -127,9 +132,11 @@ calendarRouter.get('/google/callback', async (req, res) => {
     }
 
     oauth2Client.setCredentials(tokens)
+    logger.info('OAuth tokens exchanged, fetching user info')
     const oauth2Api = google.oauth2({ version: 'v2', auth: oauth2Client })
     const { data: userInfo } = await oauth2Api.userinfo.get()
     const encryptedToken = encrypt(tokens.refresh_token)
+    logger.info('User info fetched, writing to DB', { email: userInfo.email, isMember })
 
     if (isMember) {
       // Store member calendar connection
@@ -188,6 +195,15 @@ calendarRouter.get('/google/callback', async (req, res) => {
     return res.redirect(`${MOBILE_DEEP_LINK}?success=true`)
   } catch (err) {
     logger.error('Google OAuth callback failed', { error: err instanceof Error ? err.message : String(err) })
+    const WEB_BASE_ERR = process.env.WEB_APP_URL ?? 'https://klockn.com'
+    try {
+      const rawState = typeof req.query.state === 'string' ? Buffer.from(req.query.state, 'base64').toString('utf8') : ''
+      if (rawState.startsWith('web:') || rawState.startsWith('mem-web:')) {
+        return res.redirect(`${WEB_BASE_ERR}/dashboard/calendar?error=server_error`)
+      }
+    } catch {
+      // state unreadable — fall through to mobile
+    }
     return res.redirect(`${MOBILE_DEEP_LINK}?success=false&error=server_error`)
   }
 })

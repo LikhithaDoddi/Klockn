@@ -1,0 +1,51 @@
+{
+  "family": "klockn-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::341738836873:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "klockn-backend",
+      "image": "341738836873.dkr.ecr.us-east-2.amazonaws.com/klockn-backend:latest",
+      "portMappings": [
+        {
+          "containerPort": 4000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "4000" },
+        { "name": "GOOGLE_REDIRECT_URI", "value": "https://api.klockn.com/api/v1/calendar/google/callback" },
+        { "name": "WEB_APP_URL", "value": "https://klockn.com" },
+        { "name": "AI_SERVICE_URL", "value": "http://localhost:5000" },
+        { "name": "STRIPE_PLATFORM_FEE_PERCENT", "value": "2" },
+        { "name": "AWS_SES_REGION", "value": "us-east-2" },
+        { "name": "AWS_S3_BUCKET", "value": "klockn-storage" },
+        { "name": "REDIS_URL", "value": "redis://localhost:6379" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/DATABASE_URL" },
+        { "name": "FIREBASE_PROJECT_ID", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/FIREBASE_PROJECT_ID" },
+        { "name": "FIREBASE_CLIENT_EMAIL", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/FIREBASE_CLIENT_EMAIL" },
+        { "name": "FIREBASE_PRIVATE_KEY", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/FIREBASE_PRIVATE_KEY" },
+        { "name": "GOOGLE_CLIENT_ID", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/GOOGLE_CLIENT_ID" },
+        { "name": "GOOGLE_CLIENT_SECRET", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/GOOGLE_CLIENT_SECRET" },
+        { "name": "ENCRYPTION_KEY", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/ENCRYPTION_KEY" },
+        { "name": "ANTHROPIC_API_KEY", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/ANTHROPIC_API_KEY" },
+        { "name": "STRIPE_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/STRIPE_SECRET_KEY" },
+        { "name": "AI_SERVICE_SECRET", "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/AI_SERVICE_SECRET" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/klockn-backend",
+          "awslogs-region": "us-east-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

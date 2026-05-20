@@ -17,6 +17,8 @@ export function initDb(): void {
     connectionString: DATABASE_URL,
     ssl: { rejectUnauthorized: false },
     max: 10,
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
   })
 
   pool.on('error', (err) => {

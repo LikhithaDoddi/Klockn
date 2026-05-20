@@ -1,7 +1,7 @@
 'use client'
 
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onIdTokenChanged } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onIdTokenChanged, sendPasswordResetEmail } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -23,5 +23,7 @@ export const signInWithGoogle = () =>
   signInWithPopup(auth, new GoogleAuthProvider())
 
 export const signOutUser = () => signOut(auth)
+
+export const resetPassword = (email: string) => sendPasswordResetEmail(auth, email)
 
 export { onIdTokenChanged }

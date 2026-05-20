@@ -24,6 +24,8 @@ export default function GroupPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteMsg, setInviteMsg] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd')
@@ -47,6 +49,30 @@ export default function GroupPage() {
     pollRef.current = setInterval(() => load(true), 30_000)
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [load])
+
+  async function handleRemoveMember(memberId: string, memberLabel: string) {
+    if (!confirm(`Remove ${memberLabel} from this group?`)) return
+    setRemovingId(memberId)
+    try {
+      await api.delete(`/api/v1/groups/${id}/members/${memberId}`)
+      load()
+    } catch {
+      // silently reload — member list will reflect current state
+    } finally {
+      setRemovingId(null)
+    }
+  }
+
+  async function handleDeleteGroup() {
+    if (!confirm(`Delete "${group?.name}"? This cannot be undone.`)) return
+    setDeleting(true)
+    try {
+      await api.delete(`/api/v1/groups/${id}`)
+      router.push('/dashboard')
+    } catch {
+      setDeleting(false)
+    }
+  }
 
   async function handleInvite() {
     if (!inviteEmail.trim()) return
@@ -96,6 +122,14 @@ export default function GroupPage() {
       <div className="flex items-center gap-4">
         <button onClick={() => router.back()} className="text-sm text-[#71717A] hover:text-[#09090B]">← Back</button>
         <h1 className="text-2xl font-bold text-[#09090B] flex-1">{group.name}</h1>
+        <button
+          onClick={handleDeleteGroup}
+          disabled={deleting}
+          className="px-3 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+          title="Delete group"
+        >
+          {deleting ? 'Deleting…' : 'Delete group'}
+        </button>
         <button
           onClick={() => router.push(`/dashboard/groups/${id}/chat`)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white text-sm font-semibold hover:from-[#6D28D9] hover:to-[#7C3AED] transition-all shadow-[0_4px_12px_rgba(124,58,237,0.3)] hover:-translate-y-px"
@@ -156,6 +190,22 @@ export default function GroupPage() {
                 }`}>
                   {m.status === 'calendar_connected' ? 'Calendar connected' : 'Invited'}
                 </span>
+                <button
+                  onClick={() => handleRemoveMember(m.id, m.name ?? m.email)}
+                  disabled={removingId === m.id}
+                  className="ml-1 p-1.5 rounded-lg text-[#A1A1AA] hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                  title="Remove member"
+                >
+                  {removingId === m.id ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" className="animate-spin" fill="none">
+                      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="8 8"/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  )}
+                </button>
               </div>
             ))}
           </div>
