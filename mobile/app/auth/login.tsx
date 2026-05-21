@@ -20,7 +20,7 @@ export default function LoginScreen() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [, response, promptAsync] = Google.useAuthRequest({
+  const [, , promptAsync] = Google.useAuthRequest({
     webClientId: '439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com',
     redirectUri: makeRedirectUri({ scheme: 'klockn' }),
   })

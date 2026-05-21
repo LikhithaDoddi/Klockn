@@ -51,12 +51,12 @@ export default function SignupScreen() {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email.trim(), password)
       await updateProfile(user, { displayName: name.trim() })
+      // Token is set on the api client by the auth listener, but listener fires async.
+      // Manually set it here so the next call is authenticated immediately.
       const token = await user.getIdToken()
-      await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000'}/api/v1/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: name.trim() }),
-      })
+      await api.post('/api/v1/users', { name: name.trim() }, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {})
       router.replace('/(tabs)/groups')
     } catch (e: unknown) {
       setError(friendlyError(e))

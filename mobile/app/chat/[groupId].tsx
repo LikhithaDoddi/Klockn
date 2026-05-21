@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-
-function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 import {
   ActivityIndicator,
   FlatList,
@@ -17,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { api } from '@/lib/api'
 import { useChatStore, ChatMessage, BookingSuggestion } from '@/store/chatStore'
+
+function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 
 export default function ChatScreen() {
   const { groupId, groupName } = useLocalSearchParams<{ groupId: string; groupName: string }>()
