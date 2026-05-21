@@ -1,18 +1,48 @@
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
+import * as WebBrowser from 'expo-web-browser'
+import * as Google from 'expo-auth-session/providers/google'
+import { makeRedirectUri } from 'expo-auth-session'
 import { auth } from '@/lib/firebase'
+import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { colors } from '@/constants/colors'
+
+WebBrowser.maybeCompleteAuthSession()
 
 export default function SignupScreen() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [, , promptAsync] = Google.useAuthRequest({
+    webClientId: '439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com',
+    redirectUri: makeRedirectUri({ scheme: 'klockn' }),
+  })
+
+  async function handleGoogleSignup() {
+    setGoogleLoading(true)
+    setError(null)
+    try {
+      const result = await promptAsync()
+      if (result?.type === 'success' && result.authentication?.idToken) {
+        const credential = GoogleAuthProvider.credential(result.authentication.idToken)
+        const { user } = await signInWithCredential(auth, credential)
+        await api.post('/api/v1/users', { name: user.displayName ?? '' }).catch(() => {})
+        router.replace('/(tabs)/groups')
+      }
+    } catch {
+      setError('Google sign-in failed. Try again.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
 
   async function handleSignup() {
     if (!name.trim() || !email.trim() || !password) return
@@ -52,6 +82,18 @@ export default function SignupScreen() {
 
         <View style={styles.form}>
           {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+          <Button
+            label="Continue with Google"
+            onPress={handleGoogleSignup}
+            loading={googleLoading}
+            variant="secondary"
+            fullWidth
+          />
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
           <Input
             label="Full name"
             value={name}
@@ -149,6 +191,20 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    fontSize: 13,
+    color: colors.muted,
   },
   errorBanner: {
     fontSize: 14,

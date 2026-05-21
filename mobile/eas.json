@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://18.117.102.238:4000",
+        "EXPO_PUBLIC_API_URL": "https://api.klockn.com",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBE3tSVa1atT-Ym7VG3ao3ZqTmohC0qItM",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "klockn-80398.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "klockn-80398",
@@ -23,7 +23,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://18.117.102.238:4000",
+        "EXPO_PUBLIC_API_URL": "https://api.klockn.com",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBE3tSVa1atT-Ym7VG3ao3ZqTmohC0qItM",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "klockn-80398.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "klockn-80398",
