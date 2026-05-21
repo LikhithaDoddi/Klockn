@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+
+function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 import {
   ActivityIndicator,
   FlatList,
@@ -48,7 +50,7 @@ export default function ChatScreen() {
     setSending(true)
 
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: genId(),
       role: 'user',
       content: text,
       timestamp: new Date(),
@@ -64,7 +66,7 @@ export default function ChatScreen() {
         { groupId, message: text, history }
       )
       addMessage(groupId, {
-        id: crypto.randomUUID(),
+        id: genId(),
         role: 'assistant',
         content: res.data.data.reply,
         timestamp: new Date(),
@@ -72,7 +74,7 @@ export default function ChatScreen() {
       })
     } catch {
       addMessage(groupId, {
-        id: crypto.randomUUID(),
+        id: genId(),
         role: 'assistant',
         content: "Sorry, I couldn't reach the AI right now. Try again in a moment.",
         timestamp: new Date(),

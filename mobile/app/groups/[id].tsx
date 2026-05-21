@@ -251,13 +251,13 @@ function MergedGrid({ members, weekStart }: { members: GroupMember[]; weekStart:
   function allFree(date: string, hour: number): boolean {
     if (members.length === 0) return false
     return members.every((m) =>
-      m.availability.some((s) => s.date === date && s.hour === hour && s.free)
+      (m.availability ?? []).some((s) => s.date === date && s.hour === hour && s.free)
     )
   }
 
   function freeCount(date: string, hour: number): number {
     return members.filter((m) =>
-      m.availability.some((s) => s.date === date && s.hour === hour && s.free)
+      (m.availability ?? []).some((s) => s.date === date && s.hour === hour && s.free)
     ).length
   }
 
