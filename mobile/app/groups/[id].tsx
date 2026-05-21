@@ -36,6 +36,8 @@ export default function GroupDetailScreen() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd')
 
@@ -58,6 +60,45 @@ export default function GroupDetailScreen() {
     const poll = setInterval(() => load(true), POLL_INTERVAL)
     return () => clearInterval(poll)
   }, [id])
+
+  async function handleRemoveMember(memberId: string, label: string) {
+    Alert.alert('Remove member', `Remove ${label} from this group?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive',
+        onPress: async () => {
+          setRemovingId(memberId)
+          try {
+            await api.delete(`/api/v1/groups/${id}/members/${memberId}`)
+            load()
+          } catch {
+            Alert.alert('Error', 'Could not remove member. Try again.')
+          } finally {
+            setRemovingId(null)
+          }
+        },
+      },
+    ])
+  }
+
+  async function handleDeleteGroup() {
+    Alert.alert('Delete group', `Delete "${group?.name}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          setDeleting(true)
+          try {
+            await api.delete(`/api/v1/groups/${id}`)
+            router.replace('/(tabs)/groups')
+          } catch {
+            Alert.alert('Error', 'Could not delete group. Try again.')
+            setDeleting(false)
+          }
+        },
+      },
+    ])
+  }
 
   async function handleInvite() {
     if (!inviteEmail.trim()) return
@@ -100,15 +141,18 @@ export default function GroupDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.purple} />
         </TouchableOpacity>
-        <Text style={styles.groupName}>{group.name}</Text>
+        <Text style={styles.groupName} numberOfLines={1}>{group.name}</Text>
         <TouchableOpacity
           onPress={() => router.push({ pathname: '/chat/[groupId]', params: { groupId: id, groupName: group.name } })}
-          style={styles.inviteBtn}
+          style={styles.headerBtn}
         >
           <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.purple} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowInvite((v) => !v)} style={styles.inviteBtn}>
+        <TouchableOpacity onPress={() => setShowInvite((v) => !v)} style={styles.headerBtn}>
           <Ionicons name="person-add-outline" size={20} color={colors.purple} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleDeleteGroup} disabled={deleting} style={styles.deleteBtn}>
+          <Ionicons name="trash-outline" size={18} color={colors.red} />
         </TouchableOpacity>
       </View>
 
@@ -144,7 +188,12 @@ export default function GroupDetailScreen() {
           keyExtractor={(m) => m.id}
           scrollEnabled={false}
           renderItem={({ item, index }) => (
-            <MemberRow member={item} color={MEMBER_COLORS[index % MEMBER_COLORS.length]} />
+            <MemberRow
+                member={item}
+                color={MEMBER_COLORS[index % MEMBER_COLORS.length]}
+                removing={removingId === item.id}
+                onRemove={() => handleRemoveMember(item.id, item.name ?? item.email)}
+              />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
@@ -159,7 +208,12 @@ export default function GroupDetailScreen() {
   )
 }
 
-function MemberRow({ member, color }: { member: GroupMember; color: string }) {
+function MemberRow({ member, color, removing, onRemove }: {
+  member: GroupMember
+  color: string
+  removing: boolean
+  onRemove: () => void
+}) {
   return (
     <View style={styles.memberRow}>
       <View style={[styles.memberAvatar, { backgroundColor: color + '22' }]}>
@@ -170,6 +224,17 @@ function MemberRow({ member, color }: { member: GroupMember; color: string }) {
       <View style={styles.memberInfo}>
         <Text style={styles.memberName}>{member.name ?? member.email}</Text>
         <Text style={styles.memberEmail}>{member.email}</Text>
+      </View>
+      <View style={styles.memberStatus}>
+        <Text style={[styles.statusBadge, member.status === 'calendar_connected' && styles.statusConnected]}>
+          {member.status === 'calendar_connected' ? 'Connected' : 'Invited'}
+        </Text>
+        <TouchableOpacity onPress={onRemove} disabled={removing} style={styles.removeBtn}>
+          {removing
+            ? <ActivityIndicator size="small" color={colors.red} />
+            : <Ionicons name="close-circle-outline" size={20} color={colors.red} />
+          }
+        </TouchableOpacity>
       </View>
     </View>
   )
@@ -272,11 +337,19 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   groupName: { flex: 1, fontSize: 22, fontWeight: '700', color: colors.ink },
-  inviteBtn: {
+  headerBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: colors.lightPurple,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -331,6 +404,14 @@ const styles = StyleSheet.create({
   memberInfo: { flex: 1, gap: 2 },
   memberName: { fontSize: 15, fontWeight: '600', color: colors.ink },
   memberEmail: { fontSize: 13, color: colors.muted },
+  memberStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statusBadge: {
+    fontSize: 11, fontWeight: '700', color: colors.muted,
+    backgroundColor: colors.lightGray, paddingHorizontal: 8,
+    paddingVertical: 3, borderRadius: 20,
+  },
+  statusConnected: { backgroundColor: '#D1FAE5', color: '#059669' },
+  removeBtn: { padding: 2 },
 })
 
 const gridStyles = StyleSheet.create({
