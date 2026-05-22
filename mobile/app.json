@@ -17,7 +17,14 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.klockn.app",
-      "buildNumber": "1"
+      "appleTeamId": "MMDX7U6NNW",
+      "buildNumber": "1",
+      "minimumOsVersion": "16.0",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Klockn does not use your camera.",
+        "NSPhotoLibraryUsageDescription": "Klockn does not access your photos.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

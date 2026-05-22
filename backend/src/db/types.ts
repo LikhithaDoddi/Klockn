@@ -107,6 +107,16 @@ export interface GroupBusySlotsTable {
   fetched_at: ColumnType<Date, never, never>
 }
 
+export interface GroupJoinLinksTable {
+  id: Generated<string>
+  token: string
+  group_id: string
+  created_by: string
+  used_count: ColumnType<number, number | undefined, number>
+  created_at: ColumnType<Date, never, never>
+  expires_at: ColumnType<Date, Date | undefined, Date>
+}
+
 export interface Database {
   organizers: OrganizersTable
   organizer_calendar_connections: OrganizerCalendarConnectionsTable
@@ -119,6 +129,7 @@ export interface Database {
   group_members: GroupMembersTable
   group_member_calendar_connections: GroupMemberCalendarConnectionsTable
   group_busy_slots: GroupBusySlotsTable
+  group_join_links: GroupJoinLinksTable
 }
 
 export type Organizer = Selectable<OrganizersTable>
