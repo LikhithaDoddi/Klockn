@@ -1,15 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { Button } from '@/components/ui/Button'
+import { KlocknLogo } from '@/components/KlocknLogo'
 import { colors } from '@/constants/colors'
 
 export default function OnboardingScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.hero}>
-        <View style={styles.logoMark} />
-        <Text style={styles.title}>Klockn</Text>
-        <Text style={styles.tagline}>Schedule with your group.{'\n'}Skip the back-and-forth.</Text>
+        <KlocknLogo size={80} />
+        <Text style={styles.title}>klockn</Text>
+        <Text style={styles.tagline}>
+          Finally, a time that works for{' '}
+          <Text style={styles.taglineAccent}>everyone.</Text>
+        </Text>
       </View>
 
       <View style={styles.points}>
@@ -64,7 +68,7 @@ function Point({ heading, body }: PointProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.dark,
     paddingHorizontal: 28,
     paddingTop: 100,
     paddingBottom: 52,
@@ -72,26 +76,23 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    gap: 12,
-  },
-  logoMark: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: colors.purple,
-    marginBottom: 8,
+    gap: 14,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
+    fontSize: 32,
+    fontWeight: '300',
+    color: colors.white,
+    letterSpacing: 6,
   },
   tagline: {
     fontSize: 18,
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
     lineHeight: 26,
+  },
+  taglineAccent: {
+    color: colors.violet,
+    fontStyle: 'italic',
   },
   points: {
     gap: 24,
@@ -122,11 +123,11 @@ const pointStyles = StyleSheet.create({
   heading: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.ink,
+    color: 'rgba(255,255,255,0.85)',
   },
   body: {
     fontSize: 14,
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.4)',
     lineHeight: 20,
   },
 })

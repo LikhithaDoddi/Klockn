@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -17,7 +17,7 @@ import {
   getMyAvailability,
 } from '@/lib/calendar'
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7) // 7am-8pm
+const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const ROW_H = 48
 
@@ -28,17 +28,9 @@ const FREE_PHRASES = [
   'now?', 'open door', 'holler', 'call me', 'why not?',
 ]
 
-const FREE_BG = ['#F0FDF4', '#FFFBEB', '#F0F9FF', '#FFF1F2', '#F5F3FF']
-const FREE_BORDER = [
-  'rgba(16,185,129,0.4)', 'rgba(245,158,11,0.4)',
-  'rgba(14,165,233,0.4)', 'rgba(244,63,94,0.4)', 'rgba(124,58,237,0.3)',
-]
-const FREE_TEXT = ['#059669', '#B45309', '#0369A1', '#BE123C', '#6D28D9']
-
 function freeStyle(dayIdx: number, hourIdx: number, segIdx: number) {
-  const i = (dayIdx * 7 + hourIdx * 3 + segIdx * 2) % 5
   const p = (dayIdx * 13 + hourIdx * 7 + segIdx * 3) % FREE_PHRASES.length
-  return { bg: FREE_BG[i], border: FREE_BORDER[i], text: FREE_TEXT[i], phrase: FREE_PHRASES[p] }
+  return { phrase: FREE_PHRASES[p] }
 }
 
 function fmtMin(m: number) {
@@ -148,7 +140,7 @@ export default function CalendarScreen() {
     return (
       <View style={s.center}>
         <Text style={s.errorText}>{error}</Text>
-        <TouchableOpacity onPress={load} style={s.retryBtn}>
+        <TouchableOpacity onPress={load} style={s.retryBtn} activeOpacity={0.7}>
           <Text style={s.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -177,16 +169,17 @@ export default function CalendarScreen() {
     <View style={s.container}>
       {/* Week nav */}
       <View style={s.nav}>
-        <TouchableOpacity style={s.navBtn} onPress={() => setWeekOffset(w => w - 1)}>
+        <TouchableOpacity style={s.navBtn} onPress={() => setWeekOffset(w => w - 1)} activeOpacity={0.7}>
           <Text style={s.navBtnText}>‹</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.todayBtn, weekOffset === 0 && s.todayBtnActive]}
           onPress={() => setWeekOffset(0)}
+          activeOpacity={0.7}
         >
           <Text style={[s.todayBtnText, weekOffset === 0 && s.todayBtnTextActive]}>Today</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.navBtn} onPress={() => setWeekOffset(w => w + 1)}>
+        <TouchableOpacity style={s.navBtn} onPress={() => setWeekOffset(w => w + 1)} activeOpacity={0.7}>
           <Text style={s.navBtnText}>›</Text>
         </TouchableOpacity>
         <Text style={s.weekRange}>
@@ -196,7 +189,9 @@ export default function CalendarScreen() {
       </View>
 
       {calEmail && (
-        <Text style={s.connectedBadge}>● {calEmail}</Text>
+        <View style={s.connectedBadgeWrap}>
+          <Text style={s.connectedBadge}>● {calEmail}</Text>
+        </View>
       )}
 
       <ScrollView style={s.grid} showsVerticalScrollIndicator={false}>
@@ -241,9 +236,9 @@ export default function CalendarScreen() {
 
                     const fs = freeStyle(dayIdx, hourIdx, segIdx)
                     return (
-                      <View key={segIdx} style={[g.freeBlock, { top, height, backgroundColor: fs.bg, borderColor: fs.border }]}>
+                      <View key={segIdx} style={[g.freeBlock, { top, height }]}>
                         {height > 20 && (
-                          <Text style={[g.freeText, { color: fs.text }]} numberOfLines={1}>
+                          <Text style={g.freeText} numberOfLines={1}>
                             {fs.phrase}
                           </Text>
                         )}
@@ -258,9 +253,9 @@ export default function CalendarScreen() {
 
         {/* Legend */}
         <View style={g.legend}>
-          <View style={[g.legendDot, { backgroundColor: '#111' }]} />
+          <View style={[g.legendDot, { backgroundColor: 'rgba(255,255,255,0.12)' }]} />
           <Text style={g.legendText}>Busy</Text>
-          <View style={[g.legendDot, { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: 'rgba(16,185,129,0.4)' }]} />
+          <View style={[g.legendDot, { backgroundColor: 'rgba(16,185,129,0.2)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.4)' }]} />
           <Text style={g.legendText}>Free</Text>
         </View>
       </ScrollView>
@@ -269,59 +264,116 @@ export default function CalendarScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, gap: 16 },
-  errorText: { fontSize: 15, color: colors.muted, textAlign: 'center', paddingHorizontal: 32 },
+  container: { flex: 1, backgroundColor: colors.dark },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark, gap: 16 },
+  errorText: { fontSize: 15, color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingHorizontal: 32 },
   retryBtn: { paddingVertical: 10, paddingHorizontal: 24 },
-  retryText: { fontSize: 15, fontWeight: '600', color: colors.purple },
-  connectWrap: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 24, justifyContent: 'center' },
-  connectCard: { backgroundColor: colors.white, borderRadius: 20, padding: 28, gap: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  connectIcon: { width: 64, height: 64, borderRadius: 16, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center' },
-  connectTitle: { fontSize: 20, fontWeight: '700', color: colors.ink, textAlign: 'center' },
-  connectBody: { fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 22 },
-  nav: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border },
-  navBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.lightGray, alignItems: 'center', justifyContent: 'center' },
-  navBtnText: { fontSize: 18, fontWeight: '700', color: colors.muted },
-  todayBtn: { paddingHorizontal: 12, height: 34, borderRadius: 10, backgroundColor: colors.lightGray, alignItems: 'center', justifyContent: 'center' },
+  retryText: { fontSize: 15, fontWeight: '600', color: colors.violet },
+  connectWrap: { flex: 1, backgroundColor: colors.dark, paddingHorizontal: 24, justifyContent: 'center' },
+  connectCard: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 20,
+    padding: 28,
+    gap: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  connectIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: 'rgba(124,58,237,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  connectTitle: { fontSize: 20, fontWeight: '700', color: colors.white, textAlign: 'center' },
+  connectBody: { fontSize: 15, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 22 },
+  nav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: colors.dark,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  navBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navBtnText: { fontSize: 18, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  todayBtn: {
+    paddingHorizontal: 12,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   todayBtnActive: { backgroundColor: colors.purple },
-  todayBtnText: { fontSize: 12, fontWeight: '700', color: colors.muted },
+  todayBtnText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.4)' },
   todayBtnTextActive: { color: colors.white },
-  weekRange: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.ink, marginLeft: 4 },
-  connectedBadge: { fontSize: 12, color: colors.green, paddingHorizontal: 16, paddingVertical: 6, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border },
+  weekRange: { flex: 1, fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginLeft: 4 },
+  connectedBadgeWrap: {
+    backgroundColor: colors.dark,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  connectedBadge: { fontSize: 12, color: colors.violet, backgroundColor: 'rgba(124,58,237,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
   grid: { flex: 1 },
 })
 
 const g = StyleSheet.create({
-  headerRow: { flexDirection: 'row', paddingTop: 10, paddingBottom: 6, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border },
+  headerRow: {
+    flexDirection: 'row',
+    paddingTop: 10,
+    paddingBottom: 6,
+    backgroundColor: colors.dark,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
   gutter: { width: 38 },
   dayCol: { flex: 1, alignItems: 'center', gap: 4 },
   weekendCol: { opacity: 0.4 },
-  dayLabel: { fontSize: 10, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  todayLabel: { color: colors.purple },
+  dayLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  todayLabel: { color: colors.violet },
   dayNumBubble: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   todayBubble: { backgroundColor: colors.purple },
-  dayNum: { fontSize: 13, fontWeight: '700', color: colors.ink },
+  dayNum: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   todayNum: { color: colors.white },
-  hourRow: { flexDirection: 'row', height: ROW_H, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.04)' },
-  hourLabel: { width: 38, fontSize: 9, color: colors.muted, textAlign: 'right', paddingRight: 5, paddingTop: 4, fontVariant: ['tabular-nums'] },
-  cell: { flex: 1, position: 'relative', borderLeftWidth: 1, borderLeftColor: 'rgba(0,0,0,0.04)' },
-  weekendCell: { backgroundColor: 'rgba(0,0,0,0.012)' },
+  hourRow: { flexDirection: 'row', height: ROW_H, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+  hourLabel: { width: 38, fontSize: 9, color: 'rgba(255,255,255,0.25)', textAlign: 'right', paddingRight: 5, paddingTop: 4 },
+  cell: { flex: 1, position: 'relative', borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.04)' },
+  weekendCell: { backgroundColor: 'rgba(255,255,255,0.012)' },
   busyBlock: {
     position: 'absolute', left: 2, right: 2,
-    borderRadius: 6, backgroundColor: '#111',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
   },
   lockIcon: { fontSize: 10 },
-  exactLabel: { position: 'absolute', bottom: 2, right: 4, fontSize: 7, fontWeight: '800', color: 'rgba(255,255,255,0.4)' },
+  exactLabel: { position: 'absolute', bottom: 2, right: 4, fontSize: 7, fontWeight: '800', color: 'rgba(255,255,255,0.3)' },
   freeBlock: {
     position: 'absolute', left: 2, right: 2,
-    borderRadius: 6, borderWidth: 1, borderStyle: 'dashed',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(16,185,129,0.4)',
+    backgroundColor: 'rgba(16,185,129,0.2)',
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
   },
-  freeText: { fontSize: 8, fontWeight: '800', paddingHorizontal: 2 },
+  freeText: { fontSize: 8, fontWeight: '800', color: colors.greenLight, paddingHorizontal: 2 },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 16, justifyContent: 'center' },
   legendDot: { width: 12, height: 12, borderRadius: 3 },
-  legendText: { fontSize: 11, color: colors.muted, marginRight: 10 },
+  legendText: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginRight: 10 },
 })

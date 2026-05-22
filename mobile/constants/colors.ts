@@ -1,0 +1,22 @@
+export const colors = {
+  purple: '#7C3AED',
+  violet: '#A78BFA',
+  coral: '#F97316',
+  green: '#10B981',
+  greenLight: '#34D399',
+  red: '#EF4444',
+  amber: '#F59E0B',
+  ink: '#09090B',
+  white: '#FFFFFF',
+  muted: '#71717A',
+  border: 'rgba(0,0,0,0.08)',
+  background: '#F9FAFB',
+  lightPurple: '#EDE9FE',
+  lightGray: '#F4F4F5',
+  lightGreen: '#D1FAE5',
+  // Dark theme tokens
+  dark: '#0d0118',
+  darkGradientEnd: '#1a0533',
+  surface: 'rgba(255,255,255,0.06)',
+  surfaceElevated: '#1a1a1a',
+} as const

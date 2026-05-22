@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { KlocknLogo } from '@/components/KlocknLogo'
 import { colors } from '@/constants/colors'
 import { useGroupStore, Group } from '@/store/groupStore'
 import { api } from '@/lib/api'
@@ -42,16 +44,35 @@ export default function GroupsScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <LinearGradient
+        colors={[colors.dark, colors.darkGradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.glow} pointerEvents="none" />
+        <View style={styles.headerContent}>
+          <KlocknLogo size={28} />
+          <Text style={styles.wordmark}>klockn</Text>
+        </View>
+        <Text style={styles.greeting}>
+          Finally, a time that works for{' '}
+          <Text style={styles.greetingAccent}>everyone.</Text>
+        </Text>
+      </LinearGradient>
+
       <FlatList
         data={groups}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <GroupRow group={item} />}
         contentContainerStyle={groups.length === 0 ? styles.emptyList : styles.list}
+        ItemSeparatorComponent={() => <View style={styles.divider} />}
         ListEmptyComponent={
           error ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>{error}</Text>
-              <TouchableOpacity onPress={load}>
+              <TouchableOpacity onPress={load} activeOpacity={0.7}>
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
@@ -68,10 +89,11 @@ export default function GroupsScreen() {
           )
         }
       />
+
       <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/groups/create')}
-        activeOpacity={0.85}
+        activeOpacity={0.7}
       >
         <Ionicons name="add" size={28} color={colors.white} />
       </TouchableOpacity>
@@ -80,6 +102,7 @@ export default function GroupsScreen() {
 }
 
 function GroupRow({ group }: { group: Group }) {
+  const initial = group.name.slice(0, 1).toUpperCase()
   return (
     <TouchableOpacity
       style={styles.row}
@@ -87,9 +110,7 @@ function GroupRow({ group }: { group: Group }) {
       activeOpacity={0.7}
     >
       <View style={styles.rowIcon}>
-        <Text style={styles.rowIconText}>
-          {group.name.slice(0, 1).toUpperCase()}
-        </Text>
+        <Text style={styles.rowIconText}>{initial}</Text>
       </View>
       <View style={styles.rowBody}>
         <Text style={styles.rowName}>{group.name}</Text>
@@ -97,7 +118,7 @@ function GroupRow({ group }: { group: Group }) {
           {group.memberCount ?? 0} {(group.memberCount ?? 0) === 1 ? 'member' : 'members'}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.2)" />
     </TouchableOpacity>
   )
 }
@@ -105,21 +126,62 @@ function GroupRow({ group }: { group: Group }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.dark,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.dark,
+  },
+  header: {
+    paddingTop: 60,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    gap: 10,
+    overflow: 'hidden',
+  },
+  glow: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(124,58,237,0.4)',
+    // React Native doesn't support blur natively here; glow is approximated via opacity
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  wordmark: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: colors.white,
+    letterSpacing: 6,
+  },
+  greeting: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
+  },
+  greetingAccent: {
+    color: colors.violet,
+    fontStyle: 'italic',
   },
   list: {
-    padding: 16,
-    gap: 10,
+    paddingVertical: 8,
   },
   emptyList: {
     flex: 1,
     justifyContent: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginLeft: 72,
   },
   emptyState: {
     alignItems: 'center',
@@ -130,7 +192,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: colors.lightPurple,
+    backgroundColor: 'rgba(124,58,237,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -138,41 +200,40 @@ const styles = StyleSheet.create({
   emptyHeading: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.ink,
+    color: colors.white,
   },
   emptyText: {
     fontSize: 14,
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     lineHeight: 20,
   },
   retryText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.purple,
+    color: colors.violet,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 14,
   },
   rowIcon: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: colors.lightPurple,
+    backgroundColor: 'rgba(124,58,237,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowIconText: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.purple,
+    color: colors.violet,
   },
   rowBody: {
     flex: 1,
@@ -181,11 +242,11 @@ const styles = StyleSheet.create({
   rowName: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.ink,
+    color: 'rgba(255,255,255,0.85)',
   },
   rowMeta: {
     fontSize: 13,
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.35)',
   },
   fab: {
     position: 'absolute',
@@ -199,8 +260,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: colors.purple,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
   },
 })

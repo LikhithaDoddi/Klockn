@@ -63,7 +63,7 @@ export default function ProfileScreen() {
         style={styles.signOutBtn}
         onPress={handleSignOut}
         disabled={signingOut}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
         <Text style={styles.signOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
       </TouchableOpacity>
@@ -88,7 +88,7 @@ function Row({ label, value }: RowProps) {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.dark,
   },
   container: {
     paddingBottom: 48,
@@ -104,7 +104,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.purple,
+    backgroundColor: 'rgba(124,58,237,0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(124,58,237,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -117,24 +119,24 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.ink,
+    color: colors.white,
   },
   email: {
     fontSize: 14,
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.4)',
   },
   section: {
     marginHorizontal: 16,
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.35)',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     paddingHorizontal: 16,
@@ -148,28 +150,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   rowLabel: {
     fontSize: 15,
-    color: colors.ink,
+    color: 'rgba(255,255,255,0.85)',
   },
   rowValue: {
     fontSize: 14,
-    color: colors.muted,
+    color: 'rgba(255,255,255,0.4)',
     maxWidth: '55%',
   },
   rowAction: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.purple,
+    color: colors.violet,
   },
   signOutBtn: {
     marginHorizontal: 16,
     height: 52,
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.red,
     alignItems: 'center',
     justifyContent: 'center',
   },
