@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klockn — Calendar Design</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #F0EFFE; color: #09090B; }
+
+  .page-header { padding: 40px 48px 28px; background: white; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .page-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+  .page-header p { color: #71717A; margin-top: 5px; font-size: 13px; }
+
+  .designs { padding: 48px; }
+
+  /* ── SHARED CHROME ── */
+  .pulse-wrap {
+    background: white;
+    border-radius: 28px;
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+  }
+  .pulse-header {
+    padding: 18px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .pulse-nav { display: flex; align-items: center; gap: 10px; }
+  .pulse-nav-btn {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: #F4F4F5; border: none; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center; color: #71717A;
+    transition: all 0.15s;
+  }
+  .pulse-nav-btn:hover { background: #EDE9FE; color: #7C3AED; }
+  .pulse-week-label { font-size: 15px; font-weight: 700; color: #09090B; }
+  .pulse-meta { display: flex; gap: 8px; align-items: center; }
+  .pulse-badge {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .badge-free { background: #ECFDF5; color: #059669; }
+  .badge-busy { background: #F4F4F5; color: #09090B; }
+
+  .pulse-grid {
+    display: grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+  }
+  .pulse-col-header {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 4px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-left: 1px solid rgba(0,0,0,0.04);
+    background: #FAFAFA;
+  }
+  .pulse-col-header:first-child { border-left: none; }
+  .pulse-col-day { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: #A1A1AA; }
+  .pulse-col-date {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; margin-top: 4px; color: #09090B;
+  }
+  .pulse-col-date.today { background: #7C3AED; color: white; box-shadow: 0 4px 12px rgba(124,58,237,0.4); }
+  .pulse-col-date.weekend { color: #C4C4C4; }
+  .pulse-time-col { border-right: 1px solid rgba(0,0,0,0.05); }
+  .pulse-hour-label {
+    height: 52px; display: flex; align-items: flex-start; justify-content: flex-end;
+    padding: 6px 10px 0 0;
+    font-size: 10px; color: #D4D4D8; font-variant-numeric: tabular-nums; font-weight: 600;
+  }
+  .pulse-cell {
+    height: 52px;
+    border-left: 1px solid rgba(0,0,0,0.04);
+    border-top: 1px solid rgba(0,0,0,0.03);
+    position: relative;
+    overflow: visible;
+  }
+  .pulse-cell.weekend { background: #FAFAFA; }
+
+  /* ── BUSY: black, hatched, padlock ── */
+  .busy-block {
+    position: absolute;
+    left: 3px; right: 3px;
+    border-radius: 9px;
+    background: #0D0D0D;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    overflow: hidden;
+    z-index: 2;
+  }
+  .busy-block::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.03) 0px,
+      rgba(255,255,255,0.03) 2px,
+      transparent 2px,
+      transparent 9px
+    );
+  }
+  .busy-lock { font-size: 13px; position: relative; z-index: 1; filter: grayscale(1); }
+  .busy-label {
+    font-size: 9px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
+    color: rgba(255,255,255,0.3); position: relative; z-index: 1;
+  }
+  /* partial busy (exact time) */
+  .busy-block .busy-time {
+    position: absolute; bottom: 3px; right: 6px;
+    font-size: 8px; font-weight: 800; color: rgba(255,255,255,0.3);
+    z-index: 1; letter-spacing: 0.2px;
+  }
+
+  /* ── FREE: pastel vibe, rotating fun copy ── */
+  .free-block {
+    position: absolute;
+    left: 3px; right: 3px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+    border: 1.5px dashed transparent;
+    overflow: hidden;
+    z-index: 2;
+  }
+  .free-block:hover { transform: scale(1.03); box-shadow: 0 4px 14px rgba(0,0,0,0.09); }
+  .free-block.f-mint   { background: #F0FDF4; border-color: rgba(16,185,129,0.35); }
+  .free-block.f-amber  { background: #FFFBEB; border-color: rgba(245,158,11,0.35); }
+  .free-block.f-sky    { background: #F0F9FF; border-color: rgba(14,165,233,0.35); }
+  .free-block.f-rose   { background: #FFF1F2; border-color: rgba(244,63,94,0.35); }
+  .free-block.f-violet { background: #F5F3FF; border-color: rgba(124,58,237,0.25); }
+  .free-emoji { font-size: 13px; }
+  .free-text  { font-size: 9px; font-weight: 800; color: #71717A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* weekend cells just show muted */
+  .weekend-block {
+    position: absolute; left: 3px; right: 3px;
+    border-radius: 9px;
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Klockn Calendar — Mixed Design</h1>
+  <p>Black locked busy · Vibe Check free (no hand emoji) · Exact event times</p>
+</div>
+
+<div class="designs">
+  <div class="pulse-wrap">
+    <div class="pulse-header">
+      <div class="pulse-nav">
+        <button class="pulse-nav-btn">‹</button>
+        <span class="pulse-week-label">May 19 – 25, 2026</span>
+        <button class="pulse-nav-btn">›</button>
+      </div>
+      <div class="pulse-meta">
+        <div class="pulse-badge badge-free">✨ mostly open</div>
+        <div class="pulse-badge badge-busy">🔒 5 blocks</div>
+      </div>
+    </div>
+
+    <div class="pulse-grid">
+
+      <!-- ── Column headers ── -->
+      <div style="background:#FAFAFA;border-bottom:1px solid rgba(0,0,0,0.05)"></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">MON</span><div class="pulse-col-date today">19</div></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">TUE</span><div class="pulse-col-date">20</div></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">WED</span><div class="pulse-col-date">21</div></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">THU</span><div class="pulse-col-date">22</div></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">FRI</span><div class="pulse-col-date">23</div></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">SAT</span><div class="pulse-col-date weekend">24</div></div>
+      <div class="pulse-col-header"><span class="pulse-col-day">SUN</span><div class="pulse-col-date weekend">25</div></div>
+
+      <!-- ── 8am ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">8am</div></div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🌅</span><span class="free-text">early bird</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">☕</span><span class="free-text">grab coffee?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">🎯</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🌸</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">✨</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 9am ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">9am</div></div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">🤝</span><span class="free-text">let's link</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🚀</span><span class="free-text">let's go</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🌟</span><span class="free-text">ping me</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 10am ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">10am</div></div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">💬</span><span class="free-text">talk?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🎤</span><span class="free-text">book me</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🏄</span><span class="free-text">wide open</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 11am ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">11am</div></div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🍵</span><span class="free-text">catch up?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🎲</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">🌈</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">💡</span><span class="free-text">let's think</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 12pm ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">12pm</div></div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🍱</span><span class="free-text">lunch break</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🥗</span><span class="free-text">lunch?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">☀️</span><span class="free-text">midday open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🎯</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🌮</span><span class="free-text">taco time</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 1pm ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">1pm</div></div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🤙</span><span class="free-text">hit me up</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">💻</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🎉</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 2pm ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">2pm</div></div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">🧃</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🗓️</span><span class="free-text">book it</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🤸</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 3pm ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">3pm</div></div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🧠</span><span class="free-text">think tank?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🌀</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">☕</span><span class="free-text">coffee run?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">💫</span><span class="free-text">ping me</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🏄</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 4pm ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">4pm</div></div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🎸</span><span class="free-text">wide open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🌇</span><span class="free-text">late arvo</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🎯</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🍀</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 5pm — EXACT TIME DEMO 5:15–5:45 ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">5pm</div></div>
+      <div class="pulse-cell">
+        <!-- 5:00–5:15 free (top 25%) -->
+        <div class="free-block f-sky" style="top:2px;height:calc(52px * 0.25 - 3px)">
+          <span class="free-text" style="font-size:7px">free</span>
+        </div>
+        <!-- 5:15–5:45 busy (25%–75%) -->
+        <div class="busy-block" style="top:calc(52px * 0.25 + 1px);height:calc(52px * 0.5 - 2px)">
+          <span class="busy-lock" style="font-size:11px">🔒</span>
+          <span class="busy-time">5:15–5:45</span>
+        </div>
+        <!-- 5:45–6 free (bottom 25%) -->
+        <div class="free-block f-mint" style="top:calc(52px * 0.75 + 1px);height:calc(52px * 0.25 - 3px)">
+          <span class="free-text" style="font-size:7px">free</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🍕</span><span class="free-text">dinner?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🎮</span><span class="free-text">winding down</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="busy-block" style="top:2px;height:47px">
+          <span class="busy-lock">🔒</span><span class="busy-label">busy</span>
+        </div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🌙</span><span class="free-text">evening open</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+      <!-- ── 6pm ── -->
+      <div class="pulse-time-col"><div class="pulse-hour-label">6pm</div></div>
+      <div class="pulse-cell">
+        <div class="free-block f-mint" style="top:2px;height:47px"><span class="free-emoji">🍷</span><span class="free-text">evening?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-sky" style="top:2px;height:47px"><span class="free-emoji">🌆</span><span class="free-text">open</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-violet" style="top:2px;height:47px"><span class="free-emoji">🎬</span><span class="free-text">free!</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-amber" style="top:2px;height:47px"><span class="free-emoji">🍜</span><span class="free-text">dinner?</span></div>
+      </div>
+      <div class="pulse-cell">
+        <div class="free-block f-rose" style="top:2px;height:47px"><span class="free-emoji">🎊</span><span class="free-text">friday night!</span></div>
+      </div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+      <div class="pulse-cell weekend"><div class="weekend-block" style="top:2px;height:47px"></div></div>
+
+    </div><!-- end grid -->
+  </div><!-- end pulse-wrap -->
+</div>
+
+</body>
+</html>

@@ -1,10 +1,10 @@
 import * as WebBrowser from 'expo-web-browser'
 import { api } from './api'
 
-export interface AvailabilitySlot {
-  date: string       // 'YYYY-MM-DD'
-  hour: number       // 0–23
-  free: boolean
+export interface BusyPeriod {
+  date: string        // 'YYYY-MM-DD' in user's local timezone
+  startMinute: number // minutes from midnight
+  endMinute: number
 }
 
 export interface CalendarStatus {
@@ -18,17 +18,30 @@ export async function getCalendarStatus(): Promise<CalendarStatus> {
 }
 
 export async function connectGoogleCalendar(): Promise<boolean> {
-  const res = await api.get<{ success: boolean; data: { url: string } }>('/api/v1/calendar/google/connect')
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const res = await api.get<{ success: boolean; data: { url: string } }>(
+    '/api/v1/calendar/google/connect',
+    { params: { platform: 'mobile', tz } }
+  )
   const { url } = res.data.data
-
   const result = await WebBrowser.openAuthSessionAsync(url, 'klockn://calendar/callback')
   return result.type === 'success'
 }
 
-export async function getMyAvailability(weekStart: string): Promise<AvailabilitySlot[]> {
-  const res = await api.get<{ success: boolean; data: AvailabilitySlot[] }>(
-    '/api/v1/me/availability',
-    { params: { weekStart } }
+// Returns true if an hour slot (hour=9 → 9:00–10:00) overlaps any busy period on that date
+export function isHourBusy(date: string, hour: number, busyPeriods: BusyPeriod[]): boolean {
+  const slotStart = hour * 60
+  const slotEnd = slotStart + 60
+  return busyPeriods.some(
+    (p) => p.date === date && p.startMinute < slotEnd && p.endMinute > slotStart
   )
-  return res.data.data
+}
+
+export async function getMyAvailability(weekStart: string): Promise<BusyPeriod[]> {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const res = await api.get<{ success: boolean; data: { busyPeriods: BusyPeriod[] } }>(
+    '/api/v1/me/availability',
+    { params: { weekStart, timezone: tz } }
+  )
+  return res.data.data.busyPeriods
 }

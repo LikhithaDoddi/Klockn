@@ -47,7 +47,7 @@ If the founder says "just do it" — still write the brief. It takes 2 minutes a
 | ORM/Query | Kysely | Type-safe SQL, transparent queries |
 | Auth | Firebase Auth | Fastest OAuth setup, handles tokens |
 | Calendar | Google Calendar API (OAuth 2.0) | Primary integration |
-| AI | Anthropic Claude API (claude-sonnet-4-6) | Availability optimization + booking chat |
+| AI | Anthropic Claude API (claude-sonnet-4-5) | Availability optimization + booking chat |
 | Payments | Stripe Connect | 2% platform fee model |
 | Compute | AWS ECS Fargate | Serverless containers, auto-scaling, no infra management |
 | Cache/Queue | AWS ElastiCache for Redis | Managed Redis for BullMQ job queue |

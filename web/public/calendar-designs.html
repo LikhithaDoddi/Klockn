@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klockn — Calendar Design Explorations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #F0EFFE; color: #09090B; }
+
+  .page-header {
+    padding: 48px 48px 32px;
+    background: white;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .page-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  .page-header p { color: #71717A; margin-top: 6px; font-size: 14px; }
+
+  .designs { display: flex; flex-direction: column; gap: 80px; padding: 60px 48px; }
+
+  .design-block { display: flex; flex-direction: column; gap: 16px; }
+  .design-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #A1A1AA; }
+  .design-name { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+  .design-desc { font-size: 13px; color: #71717A; max-width: 480px; line-height: 1.6; margin-top: 2px; }
+
+  /* ─── DESIGN 1: Heatwave ─── */
+  .heatwave {
+    background: #0D0D14;
+    border-radius: 24px;
+    padding: 28px;
+    color: white;
+    overflow: hidden;
+  }
+  .heatwave-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .heatwave-title { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9); }
+  .heatwave-nav { display: flex; align-items: center; gap: 12px; }
+  .heatwave-nav button {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.08); border: none; color: white;
+    cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+  }
+  .heatwave-nav span { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); }
+  .heatwave-days {
+    display: grid;
+    grid-template-columns: 44px repeat(7, 1fr);
+    gap: 3px;
+  }
+  .heatwave-day-label {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.35);
+    padding-bottom: 8px;
+  }
+  .heatwave-day-label.today { color: #A78BFA; }
+  .heatwave-date {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    padding-bottom: 10px;
+  }
+  .heatwave-date.today {
+    color: white;
+    background: #7C3AED;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 11px;
+  }
+  .heatwave-time {
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    text-align: right;
+    padding-right: 8px;
+    line-height: 28px;
+    font-variant-numeric: tabular-nums;
+  }
+  .heatwave-cell {
+    height: 28px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .heatwave-cell.free { background: rgba(16,185,129,0.15); }
+  .heatwave-cell.busy-low { background: rgba(249,115,22,0.25); }
+  .heatwave-cell.busy-mid { background: rgba(249,115,22,0.5); }
+  .heatwave-cell.busy-high { background: rgba(239,68,68,0.6); }
+  .heatwave-cell.busy-block {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    box-shadow: 0 2px 8px rgba(124,58,237,0.4);
+  }
+  .heatwave-legend {
+    display: flex; align-items: center; gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .heatwave-legend-item { display: flex; align-items: center; gap-6px; gap: 6px; font-size: 11px; color: rgba(255,255,255,0.4); }
+  .hw-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ─── DESIGN 2: Liquid ─── */
+  .liquid {
+    background: white;
+    border-radius: 28px;
+    padding: 32px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 8px 40px rgba(124,58,237,0.08);
+  }
+  .liquid-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .liquid-week {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.4px;
+  }
+  .liquid-week span { color: #7C3AED; }
+  .liquid-controls { display: flex; gap: 8px; }
+  .liquid-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    background: white; font-size: 12px; font-weight: 600;
+    cursor: pointer; color: #71717A;
+    transition: all 0.15s;
+  }
+  .liquid-btn:hover { border-color: #7C3AED; color: #7C3AED; }
+  .liquid-btn.active { background: #7C3AED; color: white; border-color: #7C3AED; }
+  .liquid-grid {
+    display: grid;
+    grid-template-columns: 48px repeat(7, 1fr);
+    gap: 0;
+    position: relative;
+  }
+  .liquid-day-header {
+    display: flex; flex-direction: column; align-items: center;
+    padding-bottom: 12px;
+    gap: 4px;
+  }
+  .liquid-day-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #A1A1AA; }
+  .liquid-day-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #09090B;
+  }
+  .liquid-day-num.today {
+    background: linear-gradient(135deg, #7C3AED, #A78BFA);
+    color: white;
+    box-shadow: 0 4px 12px rgba(124,58,237,0.35);
+  }
+  .liquid-time-label {
+    font-size: 10px; color: #D4D4D8; text-align: right;
+    padding-right: 10px; font-variant-numeric: tabular-nums;
+    height: 40px; display: flex; align-items: center; justify-content: flex-end;
+  }
+  .liquid-slot {
+    height: 40px;
+    border-top: 1px solid rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .liquid-slot-inner {
+    margin: 2px 3px;
+    height: 36px;
+    border-radius: 8px;
+    background: transparent;
+  }
+  .liquid-slot-inner.free { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); }
+  .liquid-event {
+    position: absolute;
+    left: 3px; right: 3px;
+    border-radius: 8px;
+    padding: 3px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .liquid-event.purple {
+    background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.2));
+    color: #7C3AED;
+    border-left: 3px solid #7C3AED;
+  }
+  .liquid-event.coral {
+    background: rgba(249,115,22,0.1);
+    color: #EA580C;
+    border-left: 3px solid #F97316;
+  }
+  .liquid-event.green {
+    background: rgba(16,185,129,0.1);
+    color: #059669;
+    border-left: 3px solid #10B981;
+  }
+
+  /* ─── DESIGN 3: Mosaic ─── */
+  .mosaic {
+    border-radius: 24px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #4C1D95 100%);
+    padding: 2px;
+  }
+  .mosaic-inner {
+    background: #FAFAFA;
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .mosaic-top {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    padding: 20px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .mosaic-month { font-size: 18px; font-weight: 800; color: white; letter-spacing: -0.3px; }
+  .mosaic-nav { display: flex; gap: 6px; }
+  .mosaic-nav-btn {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: rgba(255,255,255,0.15); border: none;
+    color: white; cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(10px);
+  }
+  .mosaic-body { padding: 20px 20px; }
+  .mosaic-days-row {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 10px;
+  }
+  .mosaic-day-label {
+    text-align: center; font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.8px; color: #A1A1AA;
+    padding: 4px 0;
+  }
+  .mosaic-blocks {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+  }
+  .mosaic-col { display: flex; flex-direction: column; gap: 4px; }
+  .mosaic-segment {
+    border-radius: 10px;
+    display: flex; flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-height: 44px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .mosaic-segment:hover { transform: scale(1.03); }
+  .mosaic-segment.free { background: #ECFDF5; color: #059669; }
+  .mosaic-segment.busy {
+    background: linear-gradient(135deg, #7C3AED, #A78BFA);
+    color: white;
+    box-shadow: 0 4px 12px rgba(124,58,237,0.25);
+  }
+  .mosaic-segment.partial {
+    background: linear-gradient(135deg, #FFF7ED, #FEE2E2);
+    color: #EA580C;
+  }
+  .mosaic-segment .seg-time { font-size: 8px; opacity: 0.7; margin-top: 2px; font-weight: 500; }
+  .mosaic-footer {
+    display: flex; gap: 10px; padding: 16px 20px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    background: white;
+  }
+  .mosaic-stat {
+    flex: 1; background: #F8F7FF; border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .mosaic-stat-val { font-size: 20px; font-weight: 800; color: #7C3AED; }
+  .mosaic-stat-label { font-size: 10px; color: #A1A1AA; font-weight: 600; margin-top: 2px; }
+
+  /* ─── DESIGN 4: Pulse ─── */
+  .pulse-wrap {
+    background: white;
+    border-radius: 28px;
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+  }
+  .pulse-header {
+    padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .pulse-nav { display: flex; align-items: center; gap: 10px; }
+  .pulse-nav-btn {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: #F4F4F5; border: none; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center; color: #71717A;
+  }
+  .pulse-nav-btn:hover { background: #EDE9FE; color: #7C3AED; }
+  .pulse-week-label { font-size: 15px; font-weight: 700; color: #09090B; }
+  .pulse-tags { display: flex; gap: 6px; }
+  .pulse-tag {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .pulse-tag.free { background: #ECFDF5; color: #059669; }
+  .pulse-tag.busy { background: #FEF3C7; color: #D97706; }
+  .pulse-timeline {
+    display: grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+  }
+  .pulse-col-header {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 4px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    border-left: 1px solid rgba(0,0,0,0.04);
+    background: #FAFAFA;
+  }
+  .pulse-col-header:first-child { border-left: none; }
+  .pulse-col-day { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: #A1A1AA; }
+  .pulse-col-date {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; margin-top: 4px;
+    color: #09090B;
+  }
+  .pulse-col-date.today {
+    background: #7C3AED; color: white;
+    box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+  }
+  .pulse-time-col { border-right: 1px solid rgba(0,0,0,0.05); }
+  .pulse-hour-label {
+    height: 36px; display: flex; align-items: flex-start;
+    justify-content: flex-end; padding-right: 10px;
+    font-size: 10px; color: #D4D4D8; font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .pulse-cell {
+    height: 36px;
+    border-left: 1px solid rgba(0,0,0,0.04);
+    border-top: 1px solid rgba(0,0,0,0.03);
+    position: relative;
+  }
+  .pulse-block {
+    position: absolute; left: 2px; right: 2px;
+    border-radius: 6px; overflow: hidden;
+  }
+  .pulse-block.busy {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+  }
+  .pulse-block.busy-ext {
+    background: linear-gradient(135deg, #F97316, #FB923C);
+    box-shadow: 0 2px 8px rgba(249,115,22,0.25);
+  }
+  .pulse-block-label {
+    font-size: 9px; font-weight: 800; color: white;
+    padding: 3px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pulse-free-stripe {
+    position: absolute; left: 2px; right: 2px; top: 2px; bottom: 2px;
+    border-radius: 5px;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(16,185,129,0.08) 0px,
+      rgba(16,185,129,0.08) 3px,
+      transparent 3px,
+      transparent 6px
+    );
+  }
+
+  /* ─── DESIGN 5: Orbit ─── */
+  .orbit {
+    background: #0A0A0F;
+    border-radius: 28px;
+    padding: 32px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .orbit::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .orbit-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+    position: relative; z-index: 1;
+  }
+  .orbit-title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+  .orbit-title span { color: #A78BFA; }
+  .orbit-pills { display: flex; gap: 6px; }
+  .orbit-pill {
+    padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    border: 1.5px solid; cursor: pointer;
+  }
+  .orbit-pill.active { background: #7C3AED; border-color: #7C3AED; color: white; }
+  .orbit-pill.inactive { border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+  .orbit-days {
+    display: flex; gap: 8px;
+    position: relative; z-index: 1;
+  }
+  .orbit-day-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .orbit-day-header {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .orbit-day-name { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.3); }
+  .orbit-day-num {
+    font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.5);
+  }
+  .orbit-day-num.today { color: #A78BFA; }
+  .orbit-block {
+    border-radius: 10px; padding: 8px 8px;
+    display: flex; flex-direction: column; gap: 2px;
+    min-height: 38px;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .orbit-block:hover { transform: translateY(-2px); }
+  .orbit-block.free {
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+  }
+  .orbit-block.busy {
+    background: linear-gradient(135deg, rgba(124,58,237,0.6), rgba(147,51,234,0.4));
+    border: 1px solid rgba(124,58,237,0.4);
+    box-shadow: 0 4px 16px rgba(124,58,237,0.2);
+  }
+  .orbit-block.partial {
+    background: rgba(249,115,22,0.15);
+    border: 1px solid rgba(249,115,22,0.25);
+  }
+  .orbit-block.empty {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .orbit-block-time { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.4); }
+  .orbit-block.busy .orbit-block-time { color: rgba(255,255,255,0.7); }
+  .orbit-block-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .orbit-block.busy .orbit-block-label { color: white; }
+  .orbit-footer {
+    margin-top: 20px; padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 1;
+  }
+  .orbit-insight { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .orbit-insight strong { color: #A78BFA; }
+  .orbit-cta {
+    padding: 8px 18px; border-radius: 20px;
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    color: white; font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+  }
+
+  .pick-banner {
+    background: white;
+    border: 2px dashed rgba(124,58,237,0.3);
+    border-radius: 16px;
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 14px;
+    color: #71717A;
+    margin-top: 24px;
+  }
+  .pick-banner strong { color: #7C3AED; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Klockn — Calendar Design Explorations</h1>
+  <p>5 directions. Pick the one that feels most like Klockn to you.</p>
+</div>
+
+<div class="designs">
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- DESIGN 1: HEATWAVE -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="design-block">
+    <div class="design-label">Option 1</div>
+    <div class="design-name">Heatwave</div>
+    <div class="design-desc">Dark background with intensity-mapped cells. The denser the purple, the busier you are. Feels like a heat map — data-forward, not calendar-shaped.</div>
+
+    <div class="heatwave">
+      <div class="heatwave-header">
+        <div class="heatwave-title">May 2026</div>
+        <div class="heatwave-nav">
+          <button>‹</button>
+          <span>This week</span>
+          <button>›</button>
+        </div>
+      </div>
+      <div class="heatwave-days">
+        <!-- Header row -->
+        <div></div>
+        <div class="heatwave-day-label today">Mon</div>
+        <div class="heatwave-day-label">Tue</div>
+        <div class="heatwave-day-label">Wed</div>
+        <div class="heatwave-day-label">Thu</div>
+        <div class="heatwave-day-label">Fri</div>
+        <div class="heatwave-day-label">Sat</div>
+        <div class="heatwave-day-label">Sun</div>
+
+        <!-- Date row -->
+        <div></div>
+        <div><div class="heatwave-date today">19</div></div>
+        <div><div class="heatwave-date">20</div></div>
+        <div><div class="heatwave-date">21</div></div>
+        <div><div class="heatwave-date">22</div></div>
+        <div><div class="heatwave-date">23</div></div>
+        <div><div class="heatwave-date">24</div></div>
+        <div><div class="heatwave-date">25</div></div>
+
+        <!-- 7am -->
+        <div class="heatwave-time">7am</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 8am -->
+        <div class="heatwave-time">8am</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-low"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 9am -->
+        <div class="heatwave-time">9am</div>
+        <div class="heatwave-cell busy-block"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-mid"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 10am -->
+        <div class="heatwave-time">10am</div>
+        <div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-high"></div><div class="heatwave-cell busy-low"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 11am -->
+        <div class="heatwave-time">11am</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-high"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 12pm -->
+        <div class="heatwave-time">12pm</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell busy-mid"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 1pm -->
+        <div class="heatwave-time">1pm</div>
+        <div class="heatwave-cell busy-low"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 2pm -->
+        <div class="heatwave-time">2pm</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell busy-low"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 3pm -->
+        <div class="heatwave-time">3pm</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-mid"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-low"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 4pm -->
+        <div class="heatwave-time">4pm</div>
+        <div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 5pm -->
+        <div class="heatwave-time">5pm</div>
+        <div class="heatwave-cell busy-high"></div><div class="heatwave-cell busy-mid"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+        <!-- 6pm -->
+        <div class="heatwave-time">6pm</div>
+        <div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell busy-block"></div><div class="heatwave-cell free"></div><div class="heatwave-cell free"></div><div class="heatwave-cell"></div><div class="heatwave-cell"></div>
+      </div>
+      <div class="heatwave-legend">
+        <div class="heatwave-legend-item"><div class="hw-dot" style="background:rgba(16,185,129,0.3)"></div>Free</div>
+        <div class="heatwave-legend-item"><div class="hw-dot" style="background:rgba(249,115,22,0.4)"></div>Some conflicts</div>
+        <div class="heatwave-legend-item"><div class="hw-dot" style="background:linear-gradient(135deg,#7C3AED,#9333EA)"></div>Busy</div>
+        <div class="heatwave-legend-item"><div class="hw-dot" style="background:rgba(255,255,255,0.06)"></div>Weekend</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- DESIGN 2: LIQUID -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="design-block">
+    <div class="design-label">Option 2</div>
+    <div class="design-name">Liquid</div>
+    <div class="design-desc">Clean white canvas. Events rendered as coloured fluid blocks at exact times — 5:15pm shows as 5:15pm, not rounded to the hour. Closest to a real calendar but fully Klockn-styled.</div>
+
+    <div class="liquid">
+      <div class="liquid-header">
+        <div class="liquid-week">May <span>19–25</span>, 2026</div>
+        <div class="liquid-controls">
+          <button class="liquid-btn">‹</button>
+          <button class="liquid-btn active">Week</button>
+          <button class="liquid-btn">Day</button>
+          <button class="liquid-btn">›</button>
+        </div>
+      </div>
+
+      <div class="liquid-grid">
+        <!-- Header row -->
+        <div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Mon</span><div class="liquid-day-num today">19</div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Tue</span><div class="liquid-day-num">20</div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Wed</span><div class="liquid-day-num">21</div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Thu</span><div class="liquid-day-num">22</div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Fri</span><div class="liquid-day-num">23</div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Sat</span><div class="liquid-day-num" style="color:#A1A1AA">24</div></div>
+        <div class="liquid-day-header"><span class="liquid-day-name">Sun</span><div class="liquid-day-num" style="color:#A1A1AA">25</div></div>
+
+        <!-- 9am -->
+        <div class="liquid-time-label">9 am</div>
+        <div class="liquid-slot" style="position:relative">
+          <div class="liquid-event purple" style="top:2px;height:72px;position:absolute;left:3px;right:3px;display:flex;align-items:flex-start;padding-top:5px;">Team standup</div>
+        </div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+
+        <!-- 10am -->
+        <div class="liquid-time-label">10 am</div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot" style="position:relative">
+          <div class="liquid-event coral" style="top:2px;height:80px;position:absolute;left:3px;right:3px;display:flex;align-items:flex-start;padding-top:5px;">Client call</div>
+        </div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+
+        <!-- 11am -->
+        <div class="liquid-time-label">11 am</div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot" style="position:relative">
+          <div class="liquid-event purple" style="top:10px;height:60px;position:absolute;left:3px;right:3px;display:flex;align-items:flex-start;padding-top:5px;">Design review</div>
+        </div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+
+        <!-- 12pm -->
+        <div class="liquid-time-label">12 pm</div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+
+        <!-- 1pm -->
+        <div class="liquid-time-label">1 pm</div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot" style="position:relative">
+          <div class="liquid-event green" style="top:15px;height:50px;position:absolute;left:3px;right:3px;display:flex;align-items:flex-start;padding-top:5px;">1:1 with Sarah</div>
+        </div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+
+        <!-- 5pm - exact time demo -->
+        <div class="liquid-time-label">5 pm</div>
+        <div class="liquid-slot" style="position:relative">
+          <!-- 5:15 to 5:45 — offset 25% down, height 50% of row -->
+          <div class="liquid-event purple" style="top:calc(40px * 0.25);height:calc(40px * 0.5);position:absolute;left:3px;right:3px;display:flex;align-items:center;padding:0 7px;font-size:9px;">5:15–5:45 Call</div>
+        </div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"></div>
+        <div class="liquid-slot"><div class="liquid-slot-inner free"></div></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+        <div class="liquid-slot" style="background:#FAFAFA"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- DESIGN 3: MOSAIC -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="design-block">
+    <div class="design-label">Option 3</div>
+    <div class="design-name">Mosaic</div>
+    <div class="design-desc">Day split into Morning / Afternoon / Evening blocks. Tap a block to see details. Overview-first — great on mobile. Each column is a day, each row is a time band.</div>
+
+    <div class="mosaic">
+      <div class="mosaic-inner">
+        <div class="mosaic-top">
+          <div class="mosaic-month">May 2026</div>
+          <div class="mosaic-nav">
+            <button class="mosaic-nav-btn">‹</button>
+            <button class="mosaic-nav-btn">›</button>
+          </div>
+        </div>
+        <div class="mosaic-body">
+          <div class="mosaic-days-row">
+            <div class="mosaic-day-label">MON</div>
+            <div class="mosaic-day-label">TUE</div>
+            <div class="mosaic-day-label">WED</div>
+            <div class="mosaic-day-label">THU</div>
+            <div class="mosaic-day-label">FRI</div>
+            <div class="mosaic-day-label" style="color:#D4D4D8">SAT</div>
+            <div class="mosaic-day-label" style="color:#D4D4D8">SUN</div>
+          </div>
+          <div class="mosaic-blocks">
+            <!-- Mon -->
+            <div class="mosaic-col">
+              <div class="mosaic-segment free">AM<div class="seg-time">Free</div></div>
+              <div class="mosaic-segment busy">PM<div class="seg-time">2 meetings</div></div>
+              <div class="mosaic-segment free">EVE<div class="seg-time">Free</div></div>
+            </div>
+            <!-- Tue -->
+            <div class="mosaic-col">
+              <div class="mosaic-segment busy">AM<div class="seg-time">3 meetings</div></div>
+              <div class="mosaic-segment partial">PM<div class="seg-time">1 conflict</div></div>
+              <div class="mosaic-segment free">EVE<div class="seg-time">Free</div></div>
+            </div>
+            <!-- Wed -->
+            <div class="mosaic-col">
+              <div class="mosaic-segment free">AM<div class="seg-time">Free</div></div>
+              <div class="mosaic-segment free">PM<div class="seg-time">Free</div></div>
+              <div class="mosaic-segment busy">EVE<div class="seg-time">1 meeting</div></div>
+            </div>
+            <!-- Thu -->
+            <div class="mosaic-col">
+              <div class="mosaic-segment partial">AM<div class="seg-time">1 conflict</div></div>
+              <div class="mosaic-segment busy">PM<div class="seg-time">2 meetings</div></div>
+              <div class="mosaic-segment free">EVE<div class="seg-time">Free</div></div>
+            </div>
+            <!-- Fri -->
+            <div class="mosaic-col">
+              <div class="mosaic-segment free">AM<div class="seg-time">Free</div></div>
+              <div class="mosaic-segment free">PM<div class="seg-time">Free</div></div>
+              <div class="mosaic-segment free">EVE<div class="seg-time">Free</div></div>
+            </div>
+            <!-- Sat -->
+            <div class="mosaic-col" style="opacity:0.3">
+              <div class="mosaic-segment" style="background:#F4F4F5;color:#A1A1AA">AM</div>
+              <div class="mosaic-segment" style="background:#F4F4F5;color:#A1A1AA">PM</div>
+              <div class="mosaic-segment" style="background:#F4F4F5;color:#A1A1AA">EVE</div>
+            </div>
+            <!-- Sun -->
+            <div class="mosaic-col" style="opacity:0.3">
+              <div class="mosaic-segment" style="background:#F4F4F5;color:#A1A1AA">AM</div>
+              <div class="mosaic-segment" style="background:#F4F4F5;color:#A1A1AA">PM</div>
+              <div class="mosaic-segment" style="background:#F4F4F5;color:#A1A1AA">EVE</div>
+            </div>
+          </div>
+        </div>
+        <div class="mosaic-footer">
+          <div class="mosaic-stat"><div class="mosaic-stat-val">14h</div><div class="mosaic-stat-label">Free this week</div></div>
+          <div class="mosaic-stat"><div class="mosaic-stat-val">8</div><div class="mosaic-stat-label">Meetings</div></div>
+          <div class="mosaic-stat"><div class="mosaic-stat-val">Fri</div><div class="mosaic-stat-label">Best day</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- DESIGN 4: PULSE -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="design-block">
+    <div class="design-label">Option 4</div>
+    <div class="design-name">Pulse</div>
+    <div class="design-desc">Precise time grid with exact event positioning. Your 5:15 call renders at 5:15, not 5:00. Weekends are visually dimmed. Clean enough not to feel like Google Calendar.</div>
+
+    <div class="pulse-wrap">
+      <div class="pulse-header">
+        <div class="pulse-nav">
+          <button class="pulse-nav-btn">‹</button>
+          <span class="pulse-week-label">May 19 – 25, 2026</span>
+          <button class="pulse-nav-btn">›</button>
+        </div>
+        <div class="pulse-tags">
+          <div class="pulse-tag free">● 62% free</div>
+          <div class="pulse-tag busy">● 8 events</div>
+        </div>
+      </div>
+
+      <div class="pulse-timeline">
+        <!-- column headers -->
+        <div style="background:#FAFAFA;border-bottom:1px solid rgba(0,0,0,0.05)"></div>
+        <div class="pulse-col-header"><span class="pulse-col-day">MON</span><div class="pulse-col-date today">19</div></div>
+        <div class="pulse-col-header"><span class="pulse-col-day">TUE</span><div class="pulse-col-date">20</div></div>
+        <div class="pulse-col-header"><span class="pulse-col-day">WED</span><div class="pulse-col-date">21</div></div>
+        <div class="pulse-col-header"><span class="pulse-col-day">THU</span><div class="pulse-col-date">22</div></div>
+        <div class="pulse-col-header"><span class="pulse-col-day">FRI</span><div class="pulse-col-date">23</div></div>
+        <div class="pulse-col-header" style="background:#FAFAFA"><span class="pulse-col-day" style="color:#D4D4D8">SAT</span><div class="pulse-col-date" style="color:#D4D4D8">24</div></div>
+        <div class="pulse-col-header" style="background:#FAFAFA"><span class="pulse-col-day" style="color:#D4D4D8">SUN</span><div class="pulse-col-date" style="color:#D4D4D8">25</div></div>
+
+        <!-- 9am -->
+        <div class="pulse-time-col"><div class="pulse-hour-label">9am</div></div>
+        <div class="pulse-cell" style="position:relative">
+          <div class="pulse-block busy" style="top:2px;height:68px"><div class="pulse-block-label">Standup</div></div>
+        </div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"><div class="pulse-free-stripe"></div></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+
+        <!-- 10am -->
+        <div class="pulse-time-col"><div class="pulse-hour-label">10am</div></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell" style="position:relative">
+          <div class="pulse-block busy-ext" style="top:2px;height:72px"><div class="pulse-block-label">Client call</div></div>
+        </div>
+        <div class="pulse-cell"><div class="pulse-free-stripe"></div></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+
+        <!-- 11am -->
+        <div class="pulse-time-col"><div class="pulse-hour-label">11am</div></div>
+        <div class="pulse-cell"><div class="pulse-free-stripe"></div></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"><div class="pulse-free-stripe"></div></div>
+        <div class="pulse-cell" style="position:relative">
+          <div class="pulse-block busy" style="top:8px;height:56px"><div class="pulse-block-label">Design review</div></div>
+        </div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+
+        <!-- 5pm — exact time demo -->
+        <div class="pulse-time-col"><div class="pulse-hour-label">5pm</div></div>
+        <div class="pulse-cell" style="position:relative">
+          <!-- 5:15 = 25% offset, 30min = 50% height -->
+          <div class="pulse-block busy" style="top:calc(36px * 0.25);height:calc(36px * 0.5)">
+            <div class="pulse-block-label" style="font-size:8px;">5:15–5:45</div>
+          </div>
+        </div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"></div>
+        <div class="pulse-cell"><div class="pulse-free-stripe"></div></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+        <div class="pulse-cell" style="background:#FAFAFA"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- DESIGN 5: ORBIT -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="design-block">
+    <div class="design-label">Option 5</div>
+    <div class="design-name">Orbit</div>
+    <div class="design-desc">Dark, premium, grouped by time band. Morning / Midday / Afternoon / Evening. Feels like a product, not a utility. Weekends show but are clearly secondary.</div>
+
+    <div class="orbit">
+      <div class="orbit-header">
+        <div class="orbit-title">Week of <span>May 19</span></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="orbit-pills">
+            <div class="orbit-pill active">Week</div>
+            <div class="orbit-pill inactive">Day</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.08);border:none;color:white;cursor:pointer;font-size:14px">‹</button>
+            <button style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.08);border:none;color:white;cursor:pointer;font-size:14px">›</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Morning band -->
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.25);margin-bottom:8px;">Morning · 7–12pm</div>
+      <div class="orbit-days" style="margin-bottom:16px;">
+        <div class="orbit-day-col">
+          <div class="orbit-day-header"><span class="orbit-day-name">Mon</span><div class="orbit-day-num today">19</div></div>
+          <div class="orbit-block busy"><div class="orbit-block-time">9–10am</div><div class="orbit-block-label">Standup</div></div>
+          <div class="orbit-block free"><div class="orbit-block-time">10–12pm</div><div class="orbit-block-label">Free</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-day-header"><span class="orbit-day-name">Tue</span><div class="orbit-day-num">20</div></div>
+          <div class="orbit-block busy"><div class="orbit-block-time">9–11am</div><div class="orbit-block-label">Client call</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-day-header"><span class="orbit-day-name">Wed</span><div class="orbit-day-num">21</div></div>
+          <div class="orbit-block free"><div class="orbit-block-time">7am–12pm</div><div class="orbit-block-label">Free</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-day-header"><span class="orbit-day-name">Thu</span><div class="orbit-day-num">22</div></div>
+          <div class="orbit-block partial"><div class="orbit-block-time">11–11:45am</div><div class="orbit-block-label">Design review</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-day-header"><span class="orbit-day-name">Fri</span><div class="orbit-day-num">23</div></div>
+          <div class="orbit-block free"><div class="orbit-block-time">7am–12pm</div><div class="orbit-block-label">Free</div></div>
+        </div>
+        <div class="orbit-day-col" style="opacity:0.3">
+          <div class="orbit-day-header"><span class="orbit-day-name">Sat</span><div class="orbit-day-num">24</div></div>
+          <div class="orbit-block empty"></div>
+        </div>
+        <div class="orbit-day-col" style="opacity:0.3">
+          <div class="orbit-day-header"><span class="orbit-day-name">Sun</span><div class="orbit-day-num">25</div></div>
+          <div class="orbit-block empty"></div>
+        </div>
+      </div>
+
+      <!-- Afternoon band -->
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.25);margin-bottom:8px;">Afternoon · 12–6pm</div>
+      <div class="orbit-days">
+        <div class="orbit-day-col">
+          <div class="orbit-block busy"><div class="orbit-block-time">1–2pm</div><div class="orbit-block-label">1:1</div></div>
+          <div class="orbit-block free"><div class="orbit-block-time">2–6pm</div><div class="orbit-block-label">Free</div></div>
+          <!-- exact time block -->
+          <div class="orbit-block partial"><div class="orbit-block-time">5:15–5:45pm</div><div class="orbit-block-label">Quick call</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-block busy"><div class="orbit-block-time">1–3pm</div><div class="orbit-block-label">Workshop</div></div>
+          <div class="orbit-block free"><div class="orbit-block-time">3–6pm</div><div class="orbit-block-label">Free</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-block free"><div class="orbit-block-time">12–6pm</div><div class="orbit-block-label">Free</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-block busy"><div class="orbit-block-time">2–4pm</div><div class="orbit-block-label">Sprint planning</div></div>
+        </div>
+        <div class="orbit-day-col">
+          <div class="orbit-block free"><div class="orbit-block-time">12–6pm</div><div class="orbit-block-label">Free</div></div>
+        </div>
+        <div class="orbit-day-col" style="opacity:0.3"><div class="orbit-block empty"></div></div>
+        <div class="orbit-day-col" style="opacity:0.3"><div class="orbit-block empty"></div></div>
+      </div>
+
+      <div class="orbit-footer">
+        <div class="orbit-insight">Best window this week: <strong>Friday all day</strong></div>
+        <button class="orbit-cta">Share availability</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pick-banner">
+    <strong>Pick your favourite</strong> — tell us the option number and we'll build it out with all fixes included:<br>
+    exact event times, all calendars, accepted invites, weekend support, week navigation.
+  </div>
+
+</div>
+
+</body>
+</html>

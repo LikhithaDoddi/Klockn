@@ -21,7 +21,7 @@ venuesRouter.post('/', async (req, res) => {
     : 'Attendee locations unknown'
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-4-5',
     max_tokens: 600,
     messages: [{
       role: 'user',

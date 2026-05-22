@@ -84,7 +84,7 @@ async function enrichWithExplanations(
 ): Promise<TimeWindow[]> {
   // Batch all 3 explanations in one API call to save latency
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-4-5',
     max_tokens: 400,
     system: [{
       type: 'text',

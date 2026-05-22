@@ -16,6 +16,7 @@ inviteRouter.get('/:token', async (req, res) => {
         'group_members.email',
         'group_members.name',
         'group_members.status',
+        'group_members.group_id as groupId',
         'groups.name as groupName',
       ])
       .where('group_members.invite_token', '=', req.params.token)
@@ -33,6 +34,7 @@ inviteRouter.get('/:token', async (req, res) => {
         name: member.name,
         status: member.status,
         groupName: member.groupName,
+        groupId: member.groupId,
       },
     })
   } catch (err) {
@@ -61,7 +63,10 @@ inviteRouter.get('/:token/connect-calendar', async (req, res) => {
     )
 
     const isWeb = req.query.platform === 'web'
-    const statePayload = isWeb ? `mem-web:${member.id}:${req.params.token}` : `mem:${member.id}`
+    const isJoinSource = req.query.source === 'join'
+    const statePayload = isWeb
+      ? (isJoinSource ? `join-tok-web:${member.id}:${req.params.token}` : `mem-web:${member.id}:${req.params.token}`)
+      : `mem:${member.id}`
     const url = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',

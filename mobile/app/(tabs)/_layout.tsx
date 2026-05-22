@@ -1,5 +1,7 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { BlurView } from 'expo-blur'
+import { StyleSheet } from 'react-native'
 import { colors } from '@/constants/colors'
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name']
@@ -14,25 +16,32 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.purple,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: {
-          borderTopColor: colors.border,
-          backgroundColor: colors.white,
-        },
+        tabBarActiveTintColor: colors.violet,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.35)',
+        tabBarStyle: styles.tabBar,
+        tabBarBackground: () => (
+          <BlurView
+            intensity={60}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
+        ),
         headerStyle: {
-          backgroundColor: colors.white,
+          backgroundColor: colors.dark,
         },
-        headerTintColor: colors.ink,
+        headerTintColor: colors.white,
         headerTitleStyle: {
           fontWeight: '600',
+          color: colors.white,
         },
+        headerShadowVisible: false,
       }}
     >
       <Tabs.Screen
         name="groups"
         options={{
           title: 'Groups',
+          headerShown: false,
           tabBarIcon: tabIcon('people-outline', 'people'),
         }}
       />
@@ -53,3 +62,13 @@ export default function TabsLayout() {
     </Tabs>
   )
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1,
+    backgroundColor: 'transparent',
+    elevation: 0,
+  },
+})

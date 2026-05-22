@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -12,6 +13,7 @@ import { eventsRouter } from './routes/events'
 import { attendeesRouter } from './routes/attendees'
 import { calendarRouter } from './routes/calendar'
 import { groupsRouter } from './routes/groups'
+import { groupInviteRouter } from './routes/groupInvite'
 import { meRouter } from './routes/me'
 import { ticketsRouter } from './routes/tickets'
 import { webhooksRouter } from './routes/webhooks'
@@ -55,6 +57,8 @@ app.get('/health', (_req, res) => res.json({ success: true, data: { status: 'ok'
 app.use('/api/v1/users', usersRouter)
 app.use('/api/v1/me', meRouter)
 app.use('/api/v1/groups', groupsRouter)
+app.use('/api/v1/groups', groupInviteRouter)   // /:id/join-link (auth required)
+app.use('/api/v1', groupInviteRouter)           // /join/:token (public)
 app.use('/api/v1/invite', inviteRouter)
 app.use('/api/v1/internal', internalRouter)
 app.use('/api/v1/ai', aiRouter)

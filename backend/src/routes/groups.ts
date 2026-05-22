@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { google } from 'googleapis'
 import { requireAuth } from '../middleware/auth'
 import { validate } from '../middleware/validate'
 import { getDb } from '../db/client'
@@ -7,6 +8,160 @@ import { inviteEmailQueue } from '../jobs/queues'
 import { logger } from '../lib/logger'
 
 export const groupsRouter = Router()
+
+// ── Public routes (no auth) ──────────────────────────────────────────────────
+
+groupsRouter.get('/:id/preview', async (req, res) => {
+  try {
+    const row = await getDb()
+      .selectFrom('groups')
+      .innerJoin('organizers', 'organizers.id', 'groups.organizer_id')
+      .leftJoin('group_members', 'group_members.group_id', 'groups.id')
+      .select([
+        'groups.id',
+        'groups.name',
+        'organizers.name as organizerName',
+        'organizers.email as organizerEmail',
+        getDb().fn.count<string>('group_members.id').as('member_count'),
+      ])
+      .where('groups.id', '=', req.params.id)
+      .groupBy(['groups.id', 'groups.name', 'organizers.name', 'organizers.email'])
+      .executeTakeFirst()
+
+    if (!row) {
+      return res.status(404).json({ success: false, error: 'Group not found' })
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id: row.id,
+        name: row.name,
+        createdBy: row.organizerName ?? row.organizerEmail ?? 'Someone',
+        memberCount: Number(row.member_count),
+      },
+    })
+  } catch (err) {
+    logger.error('Failed to load group preview', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to load group' })
+  }
+})
+
+groupsRouter.get('/:id/join-link', async (req, res) => {
+  try {
+    const group = await getDb()
+      .selectFrom('groups')
+      .select('id')
+      .where('id', '=', req.params.id)
+      .executeTakeFirst()
+
+    if (!group) {
+      return res.status(404).json({ success: false, error: 'Group not found' })
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/v1/calendar/google/callback'
+    )
+
+    const url = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: [
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+      ],
+      state: Buffer.from(`join-group-web:${group.id}`).toString('base64'),
+    })
+
+    return res.json({ success: true, data: { url } })
+  } catch (err) {
+    logger.error('Failed to generate group join link', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to generate join link' })
+  }
+})
+
+groupsRouter.get('/:id/availability', async (req, res) => {
+  try {
+    const group = await getDb()
+      .selectFrom('groups')
+      .select(['id', 'name'])
+      .where('id', '=', req.params.id)
+      .executeTakeFirst()
+
+    if (!group) {
+      return res.status(404).json({ success: false, error: 'Group not found' })
+    }
+
+    const members = await getDb()
+      .selectFrom('group_members')
+      .select(['id', 'status'])
+      .where('group_id', '=', group.id)
+      .execute()
+
+    const weekStartParam = typeof req.query.weekStart === 'string' ? req.query.weekStart : null
+    const weekStart = weekStartParam && /^\d{4}-\d{2}-\d{2}$/.test(weekStartParam)
+      ? weekStartParam
+      : (() => {
+          const now = new Date()
+          now.setUTCDate(now.getUTCDate() - now.getUTCDay())
+          return now.toISOString().slice(0, 10)
+        })()
+
+    const rangeStart = new Date(`${weekStart}T00:00:00Z`)
+    const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+    const connectedMembers = members.filter((m) => m.status === 'calendar_connected')
+    const memberIds = connectedMembers.map((m) => m.id)
+    const busySlots = memberIds.length > 0
+      ? await getDb()
+          .selectFrom('group_busy_slots')
+          .select(['member_id', 'starts_at', 'ends_at'])
+          .where('member_id', 'in', memberIds)
+          .where('starts_at', '<', rangeEnd)
+          .where('ends_at', '>', rangeStart)
+          .execute()
+      : []
+
+    function computeAvailability(memberId: string) {
+      const memberBusy = busySlots.filter((s) => s.member_id === memberId)
+      const slots: { date: string; hour: number; free: boolean }[] = []
+      for (let day = 0; day < 7; day++) {
+        const dayStart = new Date(rangeStart.getTime() + day * 24 * 60 * 60 * 1000)
+        const dateStr = dayStart.toISOString().slice(0, 10)
+        for (let hour = 7; hour <= 20; hour++) {
+          const slotStart = new Date(dayStart)
+          slotStart.setUTCHours(hour, 0, 0, 0)
+          const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
+          const isBusy = memberBusy.some(
+            (b) => new Date(b.starts_at) < slotEnd && new Date(b.ends_at) > slotStart
+          )
+          slots.push({ date: dateStr, hour, free: !isBusy })
+        }
+      }
+      return slots
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        groupName: group.name,
+        memberCount: members.length,
+        availability: connectedMembers.map((m) => ({
+          id: m.id,
+          availability: computeAvailability(m.id),
+        })),
+      },
+    })
+  } catch (err) {
+    logger.error('Failed to load group availability', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to load availability' })
+  }
+})
+
+// ── Auth-required routes ─────────────────────────────────────────────────────
 
 groupsRouter.use(requireAuth)
 

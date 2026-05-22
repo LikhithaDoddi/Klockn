@@ -4,7 +4,7 @@ import { Stack, router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '@/store/authStore'
 import { initAuthListener } from '@/lib/auth'
-import { registerPushToken } from '@/lib/notifications'
+import { registerPushToken, Notifications } from '@/lib/notifications'
 import { colors } from '@/constants/colors'
 
 export default function RootLayout() {
@@ -29,21 +29,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS === 'web') return
 
-    let cancelled = false
-
-    import('expo-notifications').then((Notifications) => {
-      if (cancelled) return
-      notificationListener.current = Notifications.addNotificationReceivedListener(() => {})
-      responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-        const data = response.notification.request.content.data as { groupId?: string; groupName?: string }
-        if (data?.groupId) {
-          router.push({ pathname: '/chat/[groupId]', params: { groupId: data.groupId, groupName: data.groupName ?? 'Group' } })
-        }
-      })
+    notificationListener.current = Notifications.addNotificationReceivedListener(() => {})
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as { groupId?: string; groupName?: string }
+      if (data?.groupId) {
+        router.push({ pathname: '/chat/[groupId]', params: { groupId: data.groupId, groupName: data.groupName ?? 'Group' } })
+      }
     })
 
     return () => {
-      cancelled = true
       notificationListener.current?.remove()
       responseListener.current?.remove()
     }

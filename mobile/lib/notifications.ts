@@ -1,20 +1,19 @@
 import { Platform } from 'react-native'
+import * as Notifications from 'expo-notifications'
 import { api } from './api'
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+})
 
 export async function registerPushToken(): Promise<void> {
   if (Platform.OS === 'web') return
-
-  const Notifications = await import('expo-notifications')
-
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  })
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync()
   let finalStatus = existingStatus
@@ -42,3 +41,5 @@ export async function registerPushToken(): Promise<void> {
     // Non-fatal — app works without push
   }
 }
+
+export { Notifications }

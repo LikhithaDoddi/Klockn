@@ -16,6 +16,8 @@ import { colors } from '@/constants/colors'
 import { api } from '@/lib/api'
 import { useChatStore, ChatMessage, BookingSuggestion } from '@/store/chatStore'
 
+function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
+
 export default function ChatScreen() {
   const { groupId, groupName } = useLocalSearchParams<{ groupId: string; groupName: string }>()
   const { messages, addMessage } = useChatStore()
@@ -48,7 +50,7 @@ export default function ChatScreen() {
     setSending(true)
 
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: genId(),
       role: 'user',
       content: text,
       timestamp: new Date(),
@@ -64,7 +66,7 @@ export default function ChatScreen() {
         { groupId, message: text, history }
       )
       addMessage(groupId, {
-        id: crypto.randomUUID(),
+        id: genId(),
         role: 'assistant',
         content: res.data.data.reply,
         timestamp: new Date(),
@@ -72,7 +74,7 @@ export default function ChatScreen() {
       })
     } catch {
       addMessage(groupId, {
-        id: crypto.randomUUID(),
+        id: genId(),
         role: 'assistant',
         content: "Sorry, I couldn't reach the AI right now. Try again in a moment.",
         timestamp: new Date(),
@@ -89,8 +91,8 @@ export default function ChatScreen() {
       keyboardVerticalOffset={90}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={colors.purple} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={22} color={colors.violet} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Klockn AI</Text>
@@ -106,7 +108,7 @@ export default function ChatScreen() {
         data={groupMessages}
         keyExtractor={(m) => m.id}
         contentContainerStyle={styles.messageList}
-        renderItem={({ item }) => <MessageBubble message={item} />}
+        renderItem={({ item }) => <MessageBubble message={item} groupId={groupId} />}
         onContentSizeChange={scrollToBottom}
       />
 
@@ -116,7 +118,7 @@ export default function ChatScreen() {
           value={input}
           onChangeText={setInput}
           placeholder="Message Klockn AI..."
-          placeholderTextColor={colors.muted}
+          placeholderTextColor="rgba(255,255,255,0.25)"
           multiline
           maxLength={500}
           onSubmitEditing={handleSend}
@@ -126,6 +128,7 @@ export default function ChatScreen() {
           style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
           onPress={handleSend}
           disabled={!input.trim() || sending}
+          activeOpacity={0.7}
         >
           {sending
             ? <ActivityIndicator color={colors.white} size="small" />
@@ -137,7 +140,7 @@ export default function ChatScreen() {
   )
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message, groupId }: { message: ChatMessage; groupId: string }) {
   const isUser = message.role === 'user'
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
@@ -153,59 +156,92 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           </Text>
         </View>
         {message.bookingSuggestion && (
-          <BookingCard suggestion={message.bookingSuggestion} />
+          <BookingCard suggestion={message.bookingSuggestion} groupId={groupId} />
         )}
       </View>
     </View>
   )
 }
 
-function BookingCard({ suggestion }: { suggestion: BookingSuggestion }) {
+function BookingCard({ suggestion, groupId }: { suggestion: BookingSuggestion; groupId: string }) {
+  const [booking, setBooking] = useState(false)
+  const [booked, setBooked] = useState(false)
+  const [bookError, setBookError] = useState<string | null>(null)
+
   const start = new Date(suggestion.windowStart)
   const end = new Date(suggestion.windowEnd)
   const dateStr = start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
   const timeStr = `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
 
+  async function handleBook() {
+    if (booking || booked) return
+    setBooking(true)
+    setBookError(null)
+    try {
+      await api.post(`/api/v1/groups/${groupId}/book`, {
+        windowStart: suggestion.windowStart,
+        windowEnd: suggestion.windowEnd,
+        label: suggestion.label,
+      })
+      setBooked(true)
+    } catch {
+      setBookError('Could not book this time. Please try again.')
+    } finally {
+      setBooking(false)
+    }
+  }
+
   return (
     <View style={styles.bookingCard}>
       <View style={styles.bookingCardHeader}>
-        <Ionicons name="calendar" size={16} color={colors.purple} />
+        <Ionicons name="calendar" size={16} color={colors.violet} />
         <Text style={styles.bookingCardTitle}>Suggested time</Text>
       </View>
       <Text style={styles.bookingDate}>{dateStr}</Text>
       <Text style={styles.bookingTime}>{timeStr}</Text>
       <Text style={styles.bookingLabel}>{suggestion.label}</Text>
-      <TouchableOpacity style={styles.bookingBtn}>
-        <Text style={styles.bookingBtnText}>Book this time</Text>
+      {bookError ? <Text style={styles.bookingError}>{bookError}</Text> : null}
+      <TouchableOpacity
+        style={[styles.bookingBtn, (booking || booked) && styles.bookingBtnDone]}
+        onPress={handleBook}
+        disabled={booking || booked}
+        activeOpacity={0.7}
+      >
+        {booking
+          ? <ActivityIndicator color={colors.white} size="small" />
+          : <Text style={styles.bookingBtnText}>{booked ? 'Booked!' : 'Book this time'}</Text>
+        }
       </TouchableOpacity>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1, backgroundColor: '#0d0d0d' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: colors.white,
+    backgroundColor: '#111',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
     gap: 12,
   },
   backBtn: { padding: 4 },
   headerCenter: { flex: 1, gap: 1 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  headerSub: { fontSize: 12, color: colors.muted },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.white },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
   aiBadge: {
-    backgroundColor: '#EDE9FE',
+    backgroundColor: 'rgba(124,58,237,0.2)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.3)',
   },
-  aiBadgeText: { fontSize: 11, fontWeight: '700', color: colors.purple },
+  aiBadgeText: { fontSize: 11, fontWeight: '700', color: colors.violet },
   messageList: { padding: 16, gap: 12 },
   bubbleRow: {
     flexDirection: 'row',
@@ -231,30 +267,30 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   bubbleAI: {
-    backgroundColor: colors.white,
+    backgroundColor: '#1e1e1e',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.08)',
     borderBottomLeftRadius: 4,
   },
   bubbleUser: {
     backgroundColor: colors.purple,
     borderBottomRightRadius: 4,
   },
-  bubbleText: { fontSize: 15, color: colors.ink, lineHeight: 21 },
+  bubbleText: { fontSize: 15, color: 'rgba(255,255,255,0.85)', lineHeight: 21 },
   bubbleTextUser: { color: colors.white },
   bookingCard: {
-    backgroundColor: colors.white,
+    backgroundColor: '#1a1a1a',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(124,58,237,0.3)',
     padding: 14,
     gap: 6,
   },
   bookingCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bookingCardTitle: { fontSize: 12, fontWeight: '600', color: colors.purple, textTransform: 'uppercase', letterSpacing: 0.4 },
-  bookingDate: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  bookingTime: { fontSize: 14, color: colors.muted },
-  bookingLabel: { fontSize: 13, color: colors.ink },
+  bookingDate: { fontSize: 16, fontWeight: '700', color: colors.white },
+  bookingTime: { fontSize: 14, color: 'rgba(255,255,255,0.4)' },
+  bookingLabel: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
   bookingBtn: {
     marginTop: 4,
     backgroundColor: colors.purple,
@@ -262,15 +298,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
+  bookingBtnDone: { backgroundColor: colors.green },
   bookingBtnText: { fontSize: 14, fontWeight: '600', color: colors.white },
+  bookingError: { fontSize: 12, color: colors.red, textAlign: 'center' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.white,
+    backgroundColor: '#111',
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: 'rgba(255,255,255,0.06)',
     gap: 10,
   },
   input: {
@@ -279,12 +317,12 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
-    color: colors.ink,
-    backgroundColor: colors.background,
+    color: colors.white,
+    backgroundColor: '#1e1e1e',
   },
   sendBtn: {
     width: 44,
