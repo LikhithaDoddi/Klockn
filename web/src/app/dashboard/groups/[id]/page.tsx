@@ -26,6 +26,7 @@ export default function GroupPage() {
   const [inviteMsg, setInviteMsg] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [copied, setCopied] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd')
@@ -143,7 +144,24 @@ export default function GroupPage() {
 
       {/* Invite */}
       <div className="bg-white rounded-2xl border border-black/8 p-6 flex flex-col gap-4">
-        <h2 className="font-semibold text-[#09090B]">Invite someone</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-[#09090B]">Invite someone</h2>
+          <button
+            onClick={async () => {
+              const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://klockn.com'
+              await navigator.clipboard.writeText(`${base}/join/group/${id}`)
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/10 text-xs font-medium text-[#71717A] hover:text-[#09090B] hover:border-black/20 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+              <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+              <path d="M2 10V2h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {copied ? 'Copied!' : 'Copy invite link'}
+          </button>
+        </div>
         <div className="flex gap-2">
           <input
             value={inviteEmail}
