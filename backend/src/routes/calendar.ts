@@ -104,13 +104,21 @@ calendarRouter.get('/google/callback', async (req, res) => {
     const stateDecoded = Buffer.from(state as string, 'base64').toString('utf8')
     const isWeb = stateDecoded.startsWith('web:')
     const isMemberWeb = stateDecoded.startsWith('mem-web:')
-    const isMember = stateDecoded.startsWith('mem:') || isMemberWeb
+    const isJoinTokWeb = stateDecoded.startsWith('join-tok-web:')
+    const isJoinGroupWeb = stateDecoded.startsWith('join-group-web:')
+    const isMember = stateDecoded.startsWith('mem:') || isMemberWeb || isJoinTokWeb
     const WEB_BASE = process.env.WEB_APP_URL ?? 'http://localhost:3000'
 
     let entityId: string
     let memberInviteToken: string | null = null
     let webReturnTo = 'onboarding'
-    if (isWeb) {
+    if (isJoinGroupWeb) {
+      entityId = stateDecoded.slice(16) // groupId — handled separately below
+    } else if (isJoinTokWeb) {
+      const parts = stateDecoded.slice(13).split(':')
+      entityId = parts[0]
+      memberInviteToken = parts[1] ?? null
+    } else if (isWeb) {
       const parts = stateDecoded.slice(4).split(':')
       entityId = parts[0]
       webReturnTo = parts[1] ?? 'onboarding'
@@ -136,7 +144,55 @@ calendarRouter.get('/google/callback', async (req, res) => {
     const oauth2Api = google.oauth2({ version: 'v2', auth: oauth2Client })
     const { data: userInfo } = await oauth2Api.userinfo.get()
     const encryptedToken = encrypt(tokens.refresh_token)
-    logger.info('User info fetched, writing to DB', { email: userInfo.email, isMember })
+    logger.info('User info fetched, writing to DB', { email: userInfo.email, isMember, isJoinGroupWeb })
+
+    if (isJoinGroupWeb) {
+      // Anonymous join via shared group link — create member from Google identity
+      const groupId = entityId
+      const existing = userInfo.email
+        ? await getDb()
+            .selectFrom('group_members')
+            .select('id')
+            .where('group_id', '=', groupId)
+            .where('email', '=', userInfo.email)
+            .executeTakeFirst()
+        : null
+
+      let memberId: string
+      if (existing) {
+        memberId = existing.id
+      } else {
+        const newMember = await getDb()
+          .insertInto('group_members')
+          .values({
+            group_id: groupId,
+            email: userInfo.email ?? `anon_${groupId}@join.klockn.internal`,
+            name: userInfo.name ?? null,
+            status: 'invited',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow()
+        memberId = newMember.id
+      }
+
+      await getDb()
+        .insertInto('group_member_calendar_connections')
+        .values({ member_id: memberId, provider: 'google', refresh_token_encrypted: encryptedToken })
+        .onConflict((oc) =>
+          oc.columns(['member_id', 'provider']).doUpdateSet({ refresh_token_encrypted: encryptedToken })
+        )
+        .execute()
+
+      await getDb()
+        .updateTable('group_members')
+        .set({ status: 'calendar_connected' })
+        .where('id', '=', memberId)
+        .execute()
+
+      await syncMemberBusy(memberId, oauth2Client)
+      logger.info('Group join via link completed', { groupId, memberId, email: userInfo.email })
+      return res.redirect(`${WEB_BASE}/join/group/${groupId}?joined=true`)
+    }
 
     if (isMember) {
       // Store member calendar connection
@@ -183,6 +239,9 @@ calendarRouter.get('/google/callback', async (req, res) => {
       logger.info('Organizer calendar connected', { organizerId: entityId, email: userInfo.email })
     }
 
+    if (isJoinTokWeb && memberInviteToken) {
+      return res.redirect(`${WEB_BASE}/join/${memberInviteToken}?joined=true`)
+    }
     if (isMemberWeb && memberInviteToken) {
       return res.redirect(`${WEB_BASE}/invite/${memberInviteToken}?connected=true`)
     }
