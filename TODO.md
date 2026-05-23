@@ -1,101 +1,40 @@
-# Klockn — Founder To-Do List
-# Last updated: May 2026
+# Klockn — Todo / Progress Log
 
----
+## Completed — 2026-05-22 / 2026-05-23
 
-## Infrastructure — LOCKED on AWS
-- AWS RDS PostgreSQL, ECS Fargate, ElastiCache Redis, S3, SES, Secrets Manager, Route 53
-- Apply for additional AWS credits to extend runway (see Credit Applications below)
+### iOS / TestFlight
+- [x] Bumped `buildNumber` from `"1"` → `"3"` in `mobile/app.json` (builds 1 and 2 already used/submitted)
+- [x] Triggered EAS production build with `eas build --platform ios --profile production`
+- [x] Build completed — IPA artifact available on Expo dashboard
+- [x] Submitted to TestFlight via `eas submit --platform ios --latest`
 
----
+### GitHub Actions — Deploy Backend (agent/backend)
+- [x] Diagnosed crash: `Cannot find module 'dotenv/config'` — caused by `dotenv ^17.4.2` breaking the `/config` subpath export
+- [x] Downgraded `dotenv` to `^16.4.5` in `backend/package.json`
+- [x] Regenerated root `package-lock.json` via `npm install`
+- [x] Committed and pushed — deploy triggered and should now stabilize
 
-## Active — Build
+### GitHub Actions — Deploy AI Service (main)
+- [x] Diagnosed build failure: `docker build ./ai` used `./ai` as context, but `ai/Dockerfile` copies from `shared/` which is outside that context
+- [x] Fixed `deploy-ai.yml`: changed build command to `docker build -f ai/Dockerfile .` (repo root as context)
+- [x] Fix committed alongside backend changes — takes effect on next AI deploy
 
-### Product (now)
-- [ ] Events API — create event, lock window, send RSVPs, cancel
-- [ ] Stripe ticketing — purchase flow, 2% platform fee, webhooks
-- [ ] Push notifications — fire when AI finds optimal free window
-- [ ] App Store submission — requires Apple Developer account
-- [ ] Google Play submission — requires Google Play Console account
+## Completed — 2026-05-23 (iOS auth + invite fixes)
 
-### Infrastructure
-- [ ] AWS SES production access approved (pending AWS review)
-- [ ] Route 53 DNS → api.klockn.com pointing to ECS ALB
-- [ ] Coralogix alerts configured for error spikes and ECS restarts
-- [ ] AWS billing alert set ($80/month trigger → likithawa2020@gmail.com)
+- [x] Fixed Firebase auth persistence: switched `require('@firebase/auth')` → `require('firebase/auth')` so Metro resolves the React Native bundle (not browser bundle). Auth sessions now survive app restarts.
+- [x] Fixed Apple Sign In nonce: generate a crypto nonce with `crypto.getRandomValues`, SHA-256 hash it, pass hash to Apple and raw to Firebase — was previously passing `authorizationCode` as `rawNonce` which Firebase rejects.
+- [x] Fixed Google Sign In: switched from `useAuthRequest` → `useIdTokenAuthRequest` and read `result.params.id_token` directly — code flow doesn't return idToken in `result.authentication`.
+- [x] All `@firebase/auth` imports in auth files changed to `firebase/auth`.
+- [x] TypeScript passes with zero errors.
 
----
+## In Progress
 
-## Business
+- [ ] Confirm backend ECS service stabilizes after dotenv fix deploy
+- [ ] Confirm TestFlight build (number 3) appears in App Store Connect and is available to testers
+- [ ] Trigger new EAS build (build #4) to ship auth fixes + create group FAB to TestFlight
 
-- [ ] **Stripe Atlas** — incorporate as US Delaware C-Corp before raising ($100 off via Deel). Investors require this.
-- [ ] **Slash** — open Klockn business bank account
-- [ ] **Google Workspace** — set up team email at klockn.com (hello@klockn.com, noreply@klockn.com)
-- [ ] Create hello@klockn.com in GoDaddy cPanel
+## Up Next
 
----
-
-## AWS Credit Applications
-
-Apply in priority order:
-
-- [ ] **AWS Activate Founders** ($1,000) — apply at aws.amazon.com/activate. Takes 10 minutes.
-- [ ] **AWS Activate Portfolio** ($25K–$100K, 24 months) — apply after any accelerator acceptance (AltaIR, YC, Techstars). Use their provider Organization ID.
-- [ ] **AWS Generative AI Accelerator** (up to $1,000,000) — Klockn is an AI platform. Apply now. 8-10 week program.
-- [ ] **AWS Impact Accelerator** ($100K credits + $125K equity-free cash) — check eligibility for underrepresented founders.
-
-**Credit stacking potential:**
-```
-AWS Activate Founders        $1,000   ← claim today
-AWS Activate Portfolio       $25,000  ← after accelerator acceptance
-AWS Generative AI            $1,000,000 ← apply now
-────────────────────────────────────
-Potential total AWS:         $1,026,000
-```
-
----
-
-## Fundraising
-
-- [ ] Pitch deck built
-- [ ] Data room ready (SS&C Intralinks — email deelpitchbattle@sscinc.com)
-- [ ] **AltaIR Capital AltaLab** — apply. Built by team behind Deel, Miro, Turing. Direct funding path.
-- [ ] **Flowlie** — identify investors, build warm lead list
-- [ ] Know your numbers cold:
-  - TAM: $500B+
-  - CAC B2B: $50–100
-  - CAC B2C: $0 (B2B wedge)
-  - LTV:CAC B2B: 38:1
-  - Break-even: 2 event organizers
-  - Infrastructure cost: ~$150/month on AWS
-
----
-
-## Perks to Claim
-
-- [ ] **AWS Activate Founders** ($1,000 credits) — aws.amazon.com/activate
-- [ ] **Miro** ($1,000 credit) — pitch deck and product flow
-- [ ] **Notion** (6 months free Business + AI) — team docs, roadmap
-- [ ] **FullEnrich** (300 free credits + 50% off) — find event organizer emails for B2B outreach
-- [ ] **Deel** ($5,000 credits + free payroll for life) — payroll/HR when first hire
-- [ ] **Coralogix** (free forever observability) — claim and configure now
-
----
-
-## Skip Until Product-Market Fit
-
-- [ ] Scytale (SOC 2 / ISO 27001) — wait until enterprise clients require it
-- [ ] Alta (AI sales automation) — too early
-- [ ] JumpCloud — wait until team is 3+
-
----
-
-## Key Files
-
-| File | What it is |
-|------|-----------|
-| `CLAUDE.md` | Team rules — every agent reads this |
-| `TEAM.md` | How to supervise agents + production runbook |
-| `mobile/CLAUDE.md` | Mobile agent identity and rules |
-| `backend/CLAUDE.md` | Backend agent identity and rules |
-| `ai/CLAUDE.md` | AI agent identity and rules |
+- [ ] Add `RESEND_API_KEY` to AWS Secrets Manager + ECS task definition so invite emails send
+- [ ] Open PR: `agent/backend` → `main` for founder review and merge
+- [ ] AI service deploy — verify it succeeds with corrected Docker build context on next AI engineer push

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from '@firebase/auth'
+import { signInWithEmailAndPassword, GoogleAuthProvider, OAuthProvider, signInWithCredential } from 'firebase/auth'
 import * as WebBrowser from 'expo-web-browser'
 import * as Google from 'expo-auth-session/providers/google'
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { auth } from '@/lib/firebase'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -13,14 +14,25 @@ import { colors } from '@/constants/colors'
 
 WebBrowser.maybeCompleteAuthSession()
 
+async function generateNonce(): Promise<{ raw: string; hashed: string }> {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  const raw = Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')
+  const data = new TextEncoder().encode(raw)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashed = Array.from(new Uint8Array(hashBuffer), (b) => b.toString(16).padStart(2, '0')).join('')
+  return { raw, hashed }
+}
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [appleLoading, setAppleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [, , promptAsync] = Google.useAuthRequest({
+  const [, , promptAsync] = Google.useIdTokenAuthRequest({
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -31,8 +43,9 @@ export default function LoginScreen() {
     setError(null)
     try {
       const result = await promptAsync()
-      if (result?.type === 'success' && result.authentication?.idToken) {
-        const credential = GoogleAuthProvider.credential(result.authentication.idToken)
+      if (result?.type === 'success') {
+        const idToken = result.params.id_token
+        const credential = GoogleAuthProvider.credential(idToken)
         const { user } = await signInWithCredential(auth, credential)
         await api.post('/api/v1/users', { name: user.displayName ?? '' }).catch(() => {})
         router.replace('/(tabs)/groups')
@@ -41,6 +54,37 @@ export default function LoginScreen() {
       setError('Google sign-in failed. Try again.')
     } finally {
       setGoogleLoading(false)
+    }
+  }
+
+  async function handleAppleLogin() {
+    setAppleLoading(true)
+    setError(null)
+    try {
+      const { raw, hashed } = await generateNonce()
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashed,
+      })
+      const provider = new OAuthProvider('apple.com')
+      const firebaseCredential = provider.credential({
+        idToken: credential.identityToken!,
+        rawNonce: raw,
+      })
+      const { user } = await signInWithCredential(auth, firebaseCredential)
+      const name = credential.fullName
+        ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
+        : user.displayName ?? ''
+      await api.post('/api/v1/users', { name }).catch(() => {})
+      router.replace('/(tabs)/groups')
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'ERR_REQUEST_CANCELED') return
+      setError('Apple sign-in failed. Try again.')
+    } finally {
+      setAppleLoading(false)
     }
   }
 
@@ -86,6 +130,15 @@ export default function LoginScreen() {
             variant="secondary"
             fullWidth
           />
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+              cornerRadius={12}
+              style={styles.appleBtn}
+              onPress={handleAppleLogin}
+            />
+          )}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>or</Text>
@@ -172,6 +225,10 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
+  },
+  appleBtn: {
+    height: 48,
+    width: '100%',
   },
   divider: {
     flexDirection: 'row',
