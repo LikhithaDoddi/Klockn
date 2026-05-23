@@ -103,7 +103,7 @@ meRouter.get('/calendars', async (req, res) => {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
+      process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/v1/calendar/google/callback'
     )
     oauth2Client.setCredentials({ refresh_token: decrypt(row.refresh_token_encrypted) })
 
@@ -155,6 +155,33 @@ meRouter.patch('/calendars', async (req, res) => {
   }
 })
 
+meRouter.delete('/', async (req, res) => {
+  try {
+    const organizer = await getDb()
+      .selectFrom('organizers')
+      .select('id')
+      .where('firebase_uid', '=', req.user!.uid)
+      .executeTakeFirst()
+
+    if (!organizer) return res.status(404).json({ success: false, error: 'User not found' })
+
+    // Delete all user data in order (FK constraints)
+    const orgGroupIds = getDb().selectFrom('groups').select('id').where('organizer_id', '=', organizer.id)
+    const orgMemberIds = getDb().selectFrom('group_members').select('id').where('group_id', 'in', orgGroupIds)
+    await getDb().deleteFrom('group_busy_slots').where('member_id', 'in', orgMemberIds).execute()
+    await getDb().deleteFrom('group_members').where('group_id', 'in', orgGroupIds).execute()
+    await getDb().deleteFrom('organizer_calendar_connections').where('organizer_id', '=', organizer.id).execute()
+    await getDb().deleteFrom('groups').where('organizer_id', '=', organizer.id).execute()
+    await getDb().deleteFrom('organizers').where('id', '=', organizer.id).execute()
+
+    logger.info('Account deleted', { uid: req.user!.uid })
+    return res.json({ success: true, data: null })
+  } catch (err) {
+    logger.error('Failed to delete account', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to delete account' })
+  }
+})
+
 // Returns exact busy periods for the 7-day week starting at weekStart (YYYY-MM-DD in user's local tz)
 // Response: { busyPeriods: { date: string, startMinute: number, endMinute: number }[] }
 // date is YYYY-MM-DD in user's timezone, minutes are from midnight in user's timezone
@@ -181,7 +208,7 @@ meRouter.get('/availability', async (req, res) => {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
+      process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/v1/calendar/google/callback'
     )
     oauth2Client.setCredentials({ refresh_token: decrypt(row.refresh_token_encrypted) })
 
@@ -220,7 +247,7 @@ meRouter.get('/availability', async (req, res) => {
 
     function toLocalDateMinute(d: Date): { date: string; minute: number } {
       const parts = localPartsFmt.formatToParts(d)
-      const get = (t: string) => parts.find((p) => p.type === t)!.value
+      const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '0'
       const h = parseInt(get('hour'))
       const m = parseInt(get('minute'))
       // hour12:false can return '24' for midnight — normalise

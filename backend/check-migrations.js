@@ -1,6 +1,6 @@
 const { Client } = require('pg')
 const c = new Client({
-  connectionString: 'postgresql://klocknadmin:klockn2026@klockn-db.cdswycsau35a.us-east-2.rds.amazonaws.com:5432/klockn',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 })
 c.connect()
