@@ -1,5 +1,4 @@
 import { Worker } from 'bullmq'
-import { getRedis } from './queues'
 import { logger } from '../lib/logger'
 import { sendInviteEmail } from '../lib/email'
 
@@ -13,6 +12,16 @@ export interface InviteEmailJob {
   email: string
   groupName: string
   inviteToken: string
+}
+
+function getRedisConnection() {
+  const url = new URL(process.env.REDIS_URL ?? 'redis://localhost:6379')
+  return {
+    host: url.hostname,
+    port: Number(url.port) || 6379,
+    maxRetriesPerRequest: null as null,
+    enableReadyCheck: false,
+  }
 }
 
 async function sendExpoPush(job: NotificationJob): Promise<void> {
@@ -33,6 +42,8 @@ async function sendExpoPush(job: NotificationJob): Promise<void> {
 }
 
 export function startWorkers(): void {
+  const connection = getRedisConnection()
+
   const notificationWorker = new Worker(
     'notifications',
     async (job) => {
@@ -40,7 +51,7 @@ export function startWorkers(): void {
       await sendExpoPush(data)
       logger.info('Push notification sent', { token: data.pushToken.slice(0, 20) })
     },
-    { connection: getRedis() },
+    { connection },
   )
 
   const inviteEmailWorker = new Worker(
@@ -53,7 +64,7 @@ export function startWorkers(): void {
         inviteToken: data.inviteToken,
       })
     },
-    { connection: getRedis() },
+    { connection },
   )
 
   notificationWorker.on('failed', (job, err) => {
