@@ -1,10 +1,8 @@
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
 import { logger } from './logger'
 
-const ses = new SESClient({ region: process.env.AWS_SES_REGION ?? 'us-east-1' })
-
-const FROM = process.env.EMAIL_FROM ?? 'noreply@klockn.com'
-const WEB_URL = process.env.WEB_APP_URL ?? 'https://app.klockn.com'
+const RESEND_API_KEY = process.env.RESEND_API_KEY ?? ''
+const FROM = 'Klockn <noreply@klockn.com>'
+const WEB_URL = process.env.WEB_APP_URL ?? 'https://klockn.com'
 
 export async function sendInviteEmail(params: {
   to: string
@@ -43,18 +41,25 @@ export async function sendInviteEmail(params: {
 
   const text = `You've been invited to ${params.groupName} on Klockn.\n\nConnect your Google Calendar to share your availability:\n${inviteUrl}\n\nOnly free/busy is shared — your event details stay private.`
 
-  const command = new SendEmailCommand({
-    Source: `Klockn <${FROM}>`,
-    Destination: { ToAddresses: [params.to] },
-    Message: {
-      Subject: { Data: `You're invited to ${params.groupName} on Klockn` },
-      Body: {
-        Html: { Data: html, Charset: 'UTF-8' },
-        Text: { Data: text, Charset: 'UTF-8' },
-      },
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      from: FROM,
+      to: [params.to],
+      subject: `You're invited to ${params.groupName} on Klockn`,
+      html,
+      text,
+    }),
   })
 
-  await ses.send(command)
-  logger.info('Invite email sent', { to: params.to, group: params.groupName })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Resend API error ${res.status}: ${err}`)
+  }
+
+  logger.info('Invite email sent via Resend', { to: params.to, group: params.groupName })
 }
