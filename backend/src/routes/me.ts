@@ -159,19 +159,31 @@ meRouter.delete('/', async (req, res) => {
   try {
     const organizer = await getDb()
       .selectFrom('organizers')
-      .select('id')
+      .select(['id', 'email'])
       .where('firebase_uid', '=', req.user!.uid)
       .executeTakeFirst()
 
     if (!organizer) return res.status(404).json({ success: false, error: 'User not found' })
 
     // Delete all user data in order (FK constraints)
+
+    // 1. Clean up groups this user owns
     const orgGroupIds = getDb().selectFrom('groups').select('id').where('organizer_id', '=', organizer.id)
     const orgMemberIds = getDb().selectFrom('group_members').select('id').where('group_id', 'in', orgGroupIds)
     await getDb().deleteFrom('group_busy_slots').where('member_id', 'in', orgMemberIds).execute()
+    await getDb().deleteFrom('group_member_calendar_connections').where('member_id', 'in', orgMemberIds).execute()
     await getDb().deleteFrom('group_members').where('group_id', 'in', orgGroupIds).execute()
-    await getDb().deleteFrom('organizer_calendar_connections').where('organizer_id', '=', organizer.id).execute()
+    await getDb().deleteFrom('group_join_links').where('group_id', 'in', orgGroupIds).execute()
     await getDb().deleteFrom('groups').where('organizer_id', '=', organizer.id).execute()
+
+    // 2. Clean up this user's membership in other users' groups (matched by email)
+    const memberIds = getDb().selectFrom('group_members').select('id').where('email', '=', organizer.email)
+    await getDb().deleteFrom('group_busy_slots').where('member_id', 'in', memberIds).execute()
+    await getDb().deleteFrom('group_member_calendar_connections').where('member_id', 'in', memberIds).execute()
+    await getDb().deleteFrom('group_members').where('email', '=', organizer.email).execute()
+
+    // 3. Clean up the organizer's own calendar connection and account
+    await getDb().deleteFrom('organizer_calendar_connections').where('organizer_id', '=', organizer.id).execute()
     await getDb().deleteFrom('organizers').where('id', '=', organizer.id).execute()
 
     logger.info('Account deleted', { uid: req.user!.uid })

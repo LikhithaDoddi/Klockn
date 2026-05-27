@@ -80,8 +80,18 @@ export default function GroupPage() {
     setInviting(true)
     setInviteMsg(null)
     try {
-      await api.post(`/api/v1/groups/${id}/invite`, { emails: [inviteEmail.trim()] })
-      setInviteMsg(`Invite sent to ${inviteEmail.trim()}`)
+      const res = await api.post<{ success: boolean; data: { invited: unknown[]; emailWarning?: string } }>(
+        `/api/v1/groups/${id}/invite`,
+        { emails: [inviteEmail.trim()] }
+      )
+      const { invited, emailWarning } = res.data.data
+      if (invited.length === 0) {
+        setInviteMsg(`${inviteEmail.trim()} is already in this group.`)
+      } else if (emailWarning) {
+        setInviteMsg(`Member added but the invite email could not be sent. Check back later.`)
+      } else {
+        setInviteMsg(`Invite sent to ${inviteEmail.trim()}`)
+      }
       setInviteEmail('')
       load()
     } catch {
