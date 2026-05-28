@@ -37,7 +37,7 @@ function getGroupSegments(date: string, hour: number, connected: Member[]) {
       if (p.endMinute > cellStart && p.endMinute < cellEnd) points.add(p.endMinute)
     }
   }
-  const sorted = [...points].sort((a, b) => a - b)
+  const sorted = Array.from(points).sort((a, b) => a - b)
 
   return sorted.slice(0, -1).map((segStart, i) => {
     const segEnd = sorted[i + 1]
