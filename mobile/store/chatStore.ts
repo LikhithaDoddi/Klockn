@@ -9,9 +9,10 @@ export interface ChatMessage {
 }
 
 export interface BookingSuggestion {
-  windowStart: string
-  windowEnd: string
-  label: string
+  title: string
+  datetime: string
+  duration?: string
+  notes?: string
 }
 
 interface ChatState {

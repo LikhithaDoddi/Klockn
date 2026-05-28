@@ -63,7 +63,7 @@ export default function ChatScreen() {
         .map((m) => ({ role: m.role, content: m.content }))
       const res = await api.post<{ success: boolean; data: { reply: string; suggestion?: BookingSuggestion } }>(
         '/api/v1/ai/chat',
-        { groupId, message: text, history }
+        { groupId, message: text, history, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
       )
       addMessage(groupId, {
         id: genId(),
@@ -108,7 +108,7 @@ export default function ChatScreen() {
         data={groupMessages}
         keyExtractor={(m) => m.id}
         contentContainerStyle={styles.messageList}
-        renderItem={({ item }) => <MessageBubble message={item} groupId={groupId} />}
+        renderItem={({ item }) => <MessageBubble message={item} />}
         onContentSizeChange={scrollToBottom}
       />
 
@@ -140,7 +140,7 @@ export default function ChatScreen() {
   )
 }
 
-function MessageBubble({ message, groupId }: { message: ChatMessage; groupId: string }) {
+function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
@@ -156,62 +156,29 @@ function MessageBubble({ message, groupId }: { message: ChatMessage; groupId: st
           </Text>
         </View>
         {message.bookingSuggestion && (
-          <BookingCard suggestion={message.bookingSuggestion} groupId={groupId} />
+          <BookingCard suggestion={message.bookingSuggestion} />
         )}
       </View>
     </View>
   )
 }
 
-function BookingCard({ suggestion, groupId }: { suggestion: BookingSuggestion; groupId: string }) {
-  const [booking, setBooking] = useState(false)
-  const [booked, setBooked] = useState(false)
-  const [bookError, setBookError] = useState<string | null>(null)
-
-  const start = new Date(suggestion.windowStart)
-  const end = new Date(suggestion.windowEnd)
-  const dateStr = start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-  const timeStr = `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-
-  async function handleBook() {
-    if (booking || booked) return
-    setBooking(true)
-    setBookError(null)
-    try {
-      await api.post(`/api/v1/groups/${groupId}/book`, {
-        windowStart: suggestion.windowStart,
-        windowEnd: suggestion.windowEnd,
-        label: suggestion.label,
-      })
-      setBooked(true)
-    } catch {
-      setBookError('Could not book this time. Please try again.')
-    } finally {
-      setBooking(false)
-    }
-  }
-
+function BookingCard({ suggestion }: { suggestion: BookingSuggestion }) {
   return (
     <View style={styles.bookingCard}>
       <View style={styles.bookingCardHeader}>
         <Ionicons name="calendar" size={16} color={colors.violet} />
         <Text style={styles.bookingCardTitle}>Suggested time</Text>
       </View>
-      <Text style={styles.bookingDate}>{dateStr}</Text>
-      <Text style={styles.bookingTime}>{timeStr}</Text>
-      <Text style={styles.bookingLabel}>{suggestion.label}</Text>
-      {bookError ? <Text style={styles.bookingError}>{bookError}</Text> : null}
-      <TouchableOpacity
-        style={[styles.bookingBtn, (booking || booked) && styles.bookingBtnDone]}
-        onPress={handleBook}
-        disabled={booking || booked}
-        activeOpacity={0.7}
-      >
-        {booking
-          ? <ActivityIndicator color={colors.white} size="small" />
-          : <Text style={styles.bookingBtnText}>{booked ? 'Booked!' : 'Book this time'}</Text>
-        }
-      </TouchableOpacity>
+      <Text style={styles.bookingDate}>{suggestion.title}</Text>
+      {suggestion.datetime ? (
+        <Text style={styles.bookingTime}>
+          {suggestion.datetime}{suggestion.duration ? ` · ${suggestion.duration}` : ''}
+        </Text>
+      ) : null}
+      {suggestion.notes ? (
+        <Text style={styles.bookingLabel}>{suggestion.notes}</Text>
+      ) : null}
     </View>
   )
 }
