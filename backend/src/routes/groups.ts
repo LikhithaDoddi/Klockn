@@ -205,7 +205,7 @@ groupsRouter.get('/', async (req, res) => {
   try {
     const organizer = await getDb()
       .selectFrom('organizers')
-      .select('id')
+      .select(['id', 'email'])
       .where('firebase_uid', '=', req.user!.uid)
       .executeTakeFirst()
 
@@ -213,17 +213,28 @@ groupsRouter.get('/', async (req, res) => {
       return res.status(404).json({ success: false, error: 'User profile not found' })
     }
 
+    // Return groups where user is the organizer OR an invited/connected member
     const groups = await getDb()
       .selectFrom('groups')
-      .leftJoin('group_members', 'group_members.group_id', 'groups.id')
+      .leftJoin('group_members as all_members', 'all_members.group_id', 'groups.id')
+      .leftJoin('group_members as my_membership', (join) =>
+        join.onRef('my_membership.group_id', '=', 'groups.id')
+          .on('my_membership.email', '=', organizer.email)
+      )
       .select([
         'groups.id',
         'groups.name',
         'groups.created_at',
-        getDb().fn.count<string>('group_members.id').as('member_count'),
+        'groups.organizer_id',
+        getDb().fn.count<string>('all_members.id').as('member_count'),
       ])
-      .where('groups.organizer_id', '=', organizer.id)
-      .groupBy('groups.id')
+      .where((eb) =>
+        eb.or([
+          eb('groups.organizer_id', '=', organizer.id),
+          eb('my_membership.id', 'is not', null),
+        ])
+      )
+      .groupBy(['groups.id', 'groups.name', 'groups.created_at', 'groups.organizer_id'])
       .orderBy('groups.created_at', 'desc')
       .execute()
 
@@ -234,6 +245,7 @@ groupsRouter.get('/', async (req, res) => {
         name: g.name,
         memberCount: Number(g.member_count),
         createdAt: g.created_at,
+        isOwner: g.organizer_id === organizer.id,
       })),
     })
   } catch (err) {
@@ -245,7 +257,7 @@ groupsRouter.get('/:id', async (req, res) => {
   try {
     const organizer = await getDb()
       .selectFrom('organizers')
-      .select('id')
+      .select(['id', 'email'])
       .where('firebase_uid', '=', req.user!.uid)
       .executeTakeFirst()
 
@@ -253,11 +265,21 @@ groupsRouter.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'User profile not found' })
     }
 
+    // Allow access if user is the organizer OR a member of this group
     const group = await getDb()
       .selectFrom('groups')
-      .selectAll()
-      .where('id', '=', req.params.id)
-      .where('organizer_id', '=', organizer.id)
+      .leftJoin('group_members as my_membership', (join) =>
+        join.onRef('my_membership.group_id', '=', 'groups.id')
+          .on('my_membership.email', '=', organizer.email)
+      )
+      .selectAll('groups')
+      .where('groups.id', '=', req.params.id)
+      .where((eb) =>
+        eb.or([
+          eb('groups.organizer_id', '=', organizer.id),
+          eb('my_membership.id', 'is not', null),
+        ])
+      )
       .executeTakeFirst()
 
     if (!group) {
