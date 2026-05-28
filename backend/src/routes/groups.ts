@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { sql } from 'kysely'
 import { z } from 'zod'
 import { google } from 'googleapis'
 import { requireAuth } from '../middleware/auth'
@@ -226,7 +227,7 @@ groupsRouter.get('/', async (req, res) => {
         'groups.name',
         'groups.created_at',
         'groups.organizer_id',
-        getDb().fn.count<string>('all_members.id').as('member_count'),
+        sql<string>`count(all_members.id)`.as('member_count'),
       ])
       .where((eb) =>
         eb.or([
