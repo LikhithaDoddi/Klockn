@@ -189,7 +189,13 @@ export default function GroupPage() {
             {inviting ? 'Sending…' : 'Send invite'}
           </button>
         </div>
-        {inviteMsg && <p className="text-sm text-[#71717A]">{inviteMsg}</p>}
+        {inviteMsg && (
+          <p className={`text-sm font-medium ${
+            inviteMsg.startsWith('Invite sent') ? 'text-green-600' :
+            inviteMsg.includes('already') ? 'text-[#71717A]' :
+            'text-amber-600'
+          }`}>{inviteMsg}</p>
+        )}
       </div>
 
       {/* Members */}
