@@ -279,8 +279,13 @@ groupsRouter.get('/:id', async (req, res) => {
           return now.toISOString().slice(0, 10)
         })()
 
+    const tz = typeof req.query.timezone === 'string' ? req.query.timezone : 'UTC'
+
+    // Expand range by ±1 day so timezone offsets don't clip events near day boundaries
     const rangeStart = new Date(`${weekStart}T00:00:00Z`)
-    const rangeEnd = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+    rangeStart.setUTCDate(rangeStart.getUTCDate() - 1)
+    const rangeEnd = new Date(`${weekStart}T00:00:00Z`)
+    rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 8)
 
     const memberIds = members.map((m) => m.id)
     const busySlots = memberIds.length > 0
@@ -293,20 +298,52 @@ groupsRouter.get('/:id', async (req, res) => {
           .execute()
       : []
 
+    // Convert a UTC Date to the local date+hour in the viewer's timezone
+    function toLocalHour(utcDate: Date): { date: string; hour: number } {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', hour12: false,
+      }).formatToParts(utcDate)
+      const get = (t: string) => parts.find(p => p.type === t)?.value ?? '0'
+      return {
+        date: `${get('year')}-${get('month')}-${get('day')}`,
+        hour: Number(get('hour')) % 24,
+      }
+    }
+
+    // The 7 local dates for this week (weekStart is already a local date from the frontend)
+    const localDates = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(`${weekStart}T12:00:00Z`)
+      d.setUTCDate(d.getUTCDate() + i)
+      return d.toISOString().slice(0, 10)
+    })
+
     function computeAvailability(memberId: string) {
       const memberBusy = busySlots.filter((s) => s.member_id === memberId)
+
+      // Walk each UTC busy slot hour-by-hour and mark local hours as busy
+      const busyHours = new Set<string>()
+      for (const slot of memberBusy) {
+        const start = new Date(slot.starts_at)
+        const end = new Date(slot.ends_at)
+        // Snap to the UTC hour containing start
+        const cur = new Date(start)
+        cur.setUTCMinutes(0, 0, 0)
+        while (cur < end) {
+          const { date, hour } = toLocalHour(cur)
+          busyHours.add(`${date}-${hour}`)
+          cur.setUTCHours(cur.getUTCHours() + 1)
+        }
+        // Also mark the hour containing the exact start time
+        const { date: sd, hour: sh } = toLocalHour(start)
+        busyHours.add(`${sd}-${sh}`)
+      }
+
       const slots: { date: string; hour: number; free: boolean }[] = []
-      for (let day = 0; day < 7; day++) {
-        const dayStart = new Date(rangeStart.getTime() + day * 24 * 60 * 60 * 1000)
-        const dateStr = dayStart.toISOString().slice(0, 10)
+      for (const dateStr of localDates) {
         for (let hour = 7; hour <= 20; hour++) {
-          const slotStart = new Date(dayStart)
-          slotStart.setUTCHours(hour, 0, 0, 0)
-          const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
-          const isBusy = memberBusy.some(
-            (b) => new Date(b.starts_at) < slotEnd && new Date(b.ends_at) > slotStart
-          )
-          slots.push({ date: dateStr, hour, free: !isBusy })
+          slots.push({ date: dateStr, hour, free: !busyHours.has(`${dateStr}-${hour}`) })
         }
       }
       return slots
