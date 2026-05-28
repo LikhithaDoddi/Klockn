@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate'
 import { getDb } from '../db/client'
 import { inviteEmailQueue } from '../jobs/queues'
 import { logger } from '../lib/logger'
+import { decrypt } from '../lib/encrypt'
 
 export const groupsRouter = Router()
 
@@ -269,7 +270,6 @@ groupsRouter.get('/:id', async (req, res) => {
       .where('group_id', '=', group.id)
       .execute()
 
-    // Compute hourly availability per member from their stored busy slots
     const weekStartParam = typeof req.query.weekStart === 'string' ? req.query.weekStart : null
     const weekStart = weekStartParam && /^\d{4}-\d{2}-\d{2}$/.test(weekStartParam)
       ? weekStartParam
@@ -281,7 +281,7 @@ groupsRouter.get('/:id', async (req, res) => {
 
     const tz = typeof req.query.timezone === 'string' ? req.query.timezone : 'UTC'
 
-    // Expand range by ±1 day so timezone offsets don't clip events near day boundaries
+    // ±1 day buffer so timezone shifts don't clip events near day boundaries
     const rangeStart = new Date(`${weekStart}T00:00:00Z`)
     rangeStart.setUTCDate(rangeStart.getUTCDate() - 1)
     const rangeEnd = new Date(`${weekStart}T00:00:00Z`)
@@ -298,55 +298,36 @@ groupsRouter.get('/:id', async (req, res) => {
           .execute()
       : []
 
-    // Convert a UTC Date to the local date+hour in the viewer's timezone
-    function toLocalHour(utcDate: Date): { date: string; hour: number } {
+    // Convert a UTC Date → local { date: 'YYYY-MM-DD', minute: 0-1439 }
+    function toLocal(utcDate: Date): { date: string; minute: number } {
       const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: tz,
         year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', hour12: false,
+        hour: '2-digit', minute: '2-digit', hour12: false,
       }).formatToParts(utcDate)
       const get = (t: string) => parts.find(p => p.type === t)?.value ?? '0'
       return {
         date: `${get('year')}-${get('month')}-${get('day')}`,
-        hour: Number(get('hour')) % 24,
+        minute: (Number(get('hour')) % 24) * 60 + Number(get('minute')),
       }
     }
 
-    // The 7 local dates for this week (weekStart is already a local date from the frontend)
-    const localDates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(`${weekStart}T12:00:00Z`)
-      d.setUTCDate(d.getUTCDate() + i)
-      return d.toISOString().slice(0, 10)
-    })
-
-    function computeAvailability(memberId: string) {
+    // Return minute-precise busy periods per member (same format as personal calendar)
+    function computeBusyPeriods(memberId: string) {
       const memberBusy = busySlots.filter((s) => s.member_id === memberId)
-
-      // Walk each UTC busy slot hour-by-hour and mark local hours as busy
-      const busyHours = new Set<string>()
+      const periods: { date: string; startMinute: number; endMinute: number }[] = []
       for (const slot of memberBusy) {
-        const start = new Date(slot.starts_at)
-        const end = new Date(slot.ends_at)
-        // Snap to the UTC hour containing start
-        const cur = new Date(start)
-        cur.setUTCMinutes(0, 0, 0)
-        while (cur < end) {
-          const { date, hour } = toLocalHour(cur)
-          busyHours.add(`${date}-${hour}`)
-          cur.setUTCHours(cur.getUTCHours() + 1)
-        }
-        // Also mark the hour containing the exact start time
-        const { date: sd, hour: sh } = toLocalHour(start)
-        busyHours.add(`${sd}-${sh}`)
-      }
-
-      const slots: { date: string; hour: number; free: boolean }[] = []
-      for (const dateStr of localDates) {
-        for (let hour = 7; hour <= 20; hour++) {
-          slots.push({ date: dateStr, hour, free: !busyHours.has(`${dateStr}-${hour}`) })
+        const start = toLocal(new Date(slot.starts_at))
+        const end = toLocal(new Date(slot.ends_at))
+        if (start.date === end.date) {
+          periods.push({ date: start.date, startMinute: start.minute, endMinute: end.minute })
+        } else {
+          // spans midnight in local time
+          periods.push({ date: start.date, startMinute: start.minute, endMinute: 1440 })
+          periods.push({ date: end.date, startMinute: 0, endMinute: end.minute })
         }
       }
-      return slots
+      return periods
     }
 
     return res.json({
@@ -357,12 +338,86 @@ groupsRouter.get('/:id', async (req, res) => {
         createdAt: group.created_at,
         members: members.map((m) => ({
           ...m,
-          availability: computeAvailability(m.id),
+          busyPeriods: computeBusyPeriods(m.id),
         })),
       },
     })
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Failed to fetch group' })
+  }
+})
+
+// Re-sync all connected members' calendars for this group
+groupsRouter.post('/:id/refresh', async (req, res) => {
+  try {
+    const organizer = await getDb()
+      .selectFrom('organizers')
+      .select('id')
+      .where('firebase_uid', '=', req.user!.uid)
+      .executeTakeFirst()
+
+    if (!organizer) return res.status(404).json({ success: false, error: 'User profile not found' })
+
+    const group = await getDb()
+      .selectFrom('groups')
+      .select('id')
+      .where('id', '=', req.params.id)
+      .where('organizer_id', '=', organizer.id)
+      .executeTakeFirst()
+
+    if (!group) return res.status(404).json({ success: false, error: 'Group not found' })
+
+    const connections = await getDb()
+      .selectFrom('group_member_calendar_connections')
+      .innerJoin('group_members', 'group_members.id', 'group_member_calendar_connections.member_id')
+      .select(['group_member_calendar_connections.member_id', 'group_member_calendar_connections.refresh_token_encrypted'])
+      .where('group_members.group_id', '=', group.id)
+      .where('group_members.status', '=', 'calendar_connected')
+      .execute()
+
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    )
+
+    const now = new Date()
+    const weekStart = new Date(now)
+    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay())
+    weekStart.setUTCHours(0, 0, 0, 0)
+    const twoWeeksOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
+
+    await Promise.all(connections.map(async (conn) => {
+      try {
+        oauth2Client.setCredentials({ refresh_token: decrypt(conn.refresh_token_encrypted) })
+        const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+        const fbRes = await calendar.freebusy.query({
+          requestBody: {
+            timeMin: weekStart.toISOString(),
+            timeMax: twoWeeksOut.toISOString(),
+            items: [{ id: 'primary' }],
+          },
+        })
+        const busy = fbRes.data.calendars?.primary?.busy ?? []
+        await getDb().deleteFrom('group_busy_slots').where('member_id', '=', conn.member_id).where('starts_at', '>=', weekStart).execute()
+        if (busy.length > 0) {
+          await getDb().insertInto('group_busy_slots').values(
+            busy.filter(b => b.start && b.end).map(b => ({
+              member_id: conn.member_id,
+              starts_at: new Date(b.start!),
+              ends_at: new Date(b.end!),
+            }))
+          ).execute()
+        }
+      } catch (err) {
+        logger.warn('Failed to refresh member calendar', { memberId: conn.member_id, error: err instanceof Error ? err.message : String(err) })
+      }
+    }))
+
+    return res.json({ success: true })
+  } catch (err) {
+    logger.error('Failed to refresh group calendars', { error: err instanceof Error ? err.message : String(err) })
+    return res.status(500).json({ success: false, error: 'Failed to refresh' })
   }
 })
 

@@ -7,8 +7,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { addDays, format, isToday, parseISO, startOfWeek } from 'date-fns'
 import { api } from '@/lib/api'
 
-interface MemberSlot { date: string; hour: number; free: boolean }
-interface Member { id: string; name: string | null; email: string; status: string; availability: MemberSlot[] }
+interface BusyPeriod { date: string; startMinute: number; endMinute: number }
+interface Member { id: string; name: string | null; email: string; status: string; busyPeriods: BusyPeriod[] }
 interface GroupDetail { id: string; name: string; members: Member[] }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
@@ -19,6 +19,39 @@ const ROW_PX = 52
 function hourLabel(h: number) {
   if (h === 12) return '12pm'
   return h > 12 ? `${h - 12}pm` : `${h}am`
+}
+
+// Compute overlap segments for a group hour cell — same approach as personal calendar getSegments
+// but layered: segments are classified by how many connected members are busy
+function getGroupSegments(date: string, hour: number, connected: Member[]) {
+  if (connected.length === 0) return [{ busyCount: 0, freeCount: 0, pct: 1, isEmpty: true }]
+  const cellStart = hour * 60
+  const cellEnd = (hour + 1) * 60
+
+  // Collect all change-points within this cell from all members
+  const points = new Set<number>([cellStart, cellEnd])
+  for (const m of connected) {
+    for (const p of m.busyPeriods) {
+      if (p.date !== date) continue
+      if (p.startMinute > cellStart && p.startMinute < cellEnd) points.add(p.startMinute)
+      if (p.endMinute > cellStart && p.endMinute < cellEnd) points.add(p.endMinute)
+    }
+  }
+  const sorted = [...points].sort((a, b) => a - b)
+
+  return sorted.slice(0, -1).map((segStart, i) => {
+    const segEnd = sorted[i + 1]
+    const mid = (segStart + segEnd) / 2
+    const busyCount = connected.filter(m =>
+      m.busyPeriods.some(p => p.date === date && p.startMinute <= mid && p.endMinute > mid)
+    ).length
+    return {
+      busyCount,
+      freeCount: connected.length - busyCount,
+      pct: (segEnd - segStart) / 60,
+      isEmpty: false,
+    }
+  })
 }
 
 export default function GroupPage() {
@@ -34,6 +67,7 @@ export default function GroupPage() {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -55,13 +89,26 @@ export default function GroupPage() {
     } finally {
       setLoading(false)
     }
-  }, [id, weekStart])
+  }, [id, weekStart, tz])
 
+  // On mount: load data then trigger a background refresh of all members' calendars
   useEffect(() => {
-    load()
-    pollRef.current = setInterval(() => load(true), 30_000)
+    load().then(() => {
+      api.post(`/api/v1/groups/${id}/refresh`).then(() => load(true)).catch(() => {})
+    })
+    pollRef.current = setInterval(() => load(true), 60_000)
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [load])
+  }, [load, id])
+
+  async function handleManualRefresh() {
+    setRefreshing(true)
+    try {
+      await api.post(`/api/v1/groups/${id}/refresh`)
+      await load(true)
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   async function handleRemoveMember(memberId: string, memberLabel: string) {
     if (!confirm(`Remove ${memberLabel} from this group?`)) return
@@ -70,7 +117,7 @@ export default function GroupPage() {
       await api.delete(`/api/v1/groups/${id}/members/${memberId}`)
       load()
     } catch {
-      // silently reload — member list will reflect current state
+      // silently reload
     } finally {
       setRemovingId(null)
     }
@@ -100,7 +147,7 @@ export default function GroupPage() {
       if (invited.length === 0) {
         setInviteMsg(`${inviteEmail.trim()} is already in this group.`)
       } else if (emailWarning) {
-        setInviteMsg(`Member added but the invite email could not be sent. Check back later.`)
+        setInviteMsg(`Member added but the invite email could not be sent.`)
       } else {
         setInviteMsg(`Invite sent to ${inviteEmail.trim()}`)
       }
@@ -137,17 +184,7 @@ export default function GroupPage() {
     }
   })
 
-  // Only members who've connected their calendar have real availability data
   const connectedMembers = group.members.filter(m => m.status === 'calendar_connected')
-
-  function allFree(date: string, hour: number) {
-    if (connectedMembers.length === 0) return false
-    return connectedMembers.every(m => m.availability.some(s => s.date === date && s.hour === hour && s.free))
-  }
-
-  function freeCount(date: string, hour: number) {
-    return connectedMembers.filter(m => m.availability.some(s => s.date === date && s.hour === hour && s.free)).length
-  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -213,8 +250,7 @@ export default function GroupPage() {
         {inviteMsg && (
           <p className={`text-sm font-medium ${
             inviteMsg.startsWith('Invite sent') ? 'text-green-600' :
-            inviteMsg.includes('already') ? 'text-[#71717A]' :
-            'text-amber-600'
+            inviteMsg.includes('already') ? 'text-[#71717A]' : 'text-amber-600'
           }`}>{inviteMsg}</p>
         )}
       </div>
@@ -239,9 +275,7 @@ export default function GroupPage() {
                   {m.name && <p className="text-xs text-[#71717A] truncate">{m.email}</p>}
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  m.status === 'calendar_connected'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-[#71717A]'
+                  m.status === 'calendar_connected' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-[#71717A]'
                 }`}>
                   {m.status === 'calendar_connected' ? 'Calendar connected' : 'Invited'}
                 </span>
@@ -267,7 +301,7 @@ export default function GroupPage() {
         )}
       </div>
 
-      {/* Availability grid */}
+      {/* Availability grid — matches dashboard calendar style exactly */}
       <div className="bg-white rounded-3xl border border-black/6 overflow-hidden shadow-sm">
         {/* Top bar */}
         <div className="px-5 py-3 border-b border-black/5 flex items-center justify-between">
@@ -288,25 +322,32 @@ export default function GroupPage() {
               {format(parseISO(weekStart), 'MMM d')} – {format(addDays(parseISO(weekStart), 6), 'MMM d, yyyy')}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            {connectedMembers.length === 0 ? (
-              <span className="text-xs text-[#A1A1AA]">No calendars connected yet</span>
-            ) : (
-              <>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-sm bg-[#10B981]" />
-                  <span className="text-xs text-[#71717A] font-medium">All free</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-sm bg-[#A78BFA]" />
-                  <span className="text-xs text-[#71717A] font-medium">Some free</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-sm bg-[#111]" />
-                  <span className="text-xs text-[#71717A] font-medium">All busy</span>
-                </div>
-              </>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              title="Refresh calendars"
+              className="w-7 h-7 rounded-lg bg-[#F4F4F5] flex items-center justify-center text-[#71717A] hover:bg-[#EDE9FE] hover:text-[#7C3AED] transition-colors disabled:opacity-40"
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className={refreshing ? 'animate-spin' : ''}>
+                <path d="M11 6.5A4.5 4.5 0 1 1 6.5 2a4.49 4.49 0 0 1 3.18 1.32L11 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M11 2v2.5H8.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <div className="flex items-center gap-3 ml-1">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-[#111]" />
+                <span className="text-xs text-[#71717A] font-medium">All busy</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-[#A78BFA]" />
+                <span className="text-xs text-[#71717A] font-medium">Some free</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-[#F0FDF4] border border-[rgba(16,185,129,0.35)]" />
+                <span className="text-xs text-[#71717A] font-medium">All free</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -325,10 +366,7 @@ export default function GroupPage() {
                 background: '#FAFAFA',
                 opacity: d.isWeekend ? 0.45 : 1,
               }}>
-                <span style={{
-                  fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                  letterSpacing: '0.6px', color: d.isToday ? '#7C3AED' : '#A1A1AA',
-                }}>
+                <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: d.isToday ? '#7C3AED' : '#A1A1AA' }}>
                   {d.label}
                 </span>
                 <div style={{
@@ -357,60 +395,84 @@ export default function GroupPage() {
                   {hourLabel(hour)}
                 </div>
                 {days.map((d) => {
-                  const everyone = allFree(d.date, hour)
-                  const count = freeCount(d.date, hour)
-                  const total = connectedMembers.length
-                  const ratio = total > 0 ? count / total : 0
-                  const allBusy = total > 0 && count === 0
-
-                  let bg = '#F4F4F5'
-                  let border = 'none'
-                  let content = null
-
-                  if (total === 0) {
-                    bg = d.isWeekend ? 'rgba(0,0,0,0.012)' : 'white'
-                  } else if (everyone) {
-                    bg = '#F0FDF4'
-                    border = '1.5px dashed rgba(16,185,129,0.45)'
-                    content = (
-                      <span style={{ fontSize: 9, fontWeight: 800, color: '#059669', whiteSpace: 'nowrap', padding: '0 6px' }}>
-                        Everyone free
-                      </span>
-                    )
-                  } else if (allBusy) {
-                    bg = '#111'
-                    content = (
-                      <>
-                        <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 9px)', borderRadius: 7 }} />
-                        <span style={{ fontSize: 11, position: 'relative', zIndex: 1 }}>🔒</span>
-                      </>
-                    )
-                  } else if (count > 0) {
-                    bg = `rgba(167,139,250,${0.15 + ratio * 0.55})`
-                    content = (
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#6D28D9', whiteSpace: 'nowrap', padding: '0 6px' }}>
-                        {count}/{total} free
-                      </span>
-                    )
-                  }
-
+                  const segments = getGroupSegments(d.date, hour, connectedMembers)
+                  let topPx = 2
                   return (
                     <div key={d.date} style={{
                       height: ROW_PX, position: 'relative',
                       borderLeft: '1px solid rgba(0,0,0,0.04)',
                       borderTop: '1px solid rgba(0,0,0,0.03)',
-                      background: d.isWeekend && total === 0 ? 'rgba(0,0,0,0.012)' : 'white',
+                      background: d.isWeekend ? 'rgba(0,0,0,0.012)' : 'white',
                     }}>
-                      <div style={{
-                        position: 'absolute', top: 3, left: 3, right: 3, bottom: 3,
-                        borderRadius: 7,
-                        background: bg,
-                        border,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        overflow: 'hidden',
-                      }}>
-                        {content}
-                      </div>
+                      {segments.map((seg, segIdx) => {
+                        const height = Math.max(seg.pct * (ROW_PX - 4), 4)
+                        const top = topPx
+                        topPx += height
+
+                        if (seg.isEmpty) {
+                          return (
+                            <div key={segIdx} style={{
+                              position: 'absolute', top, left: 3, right: 3, height,
+                              borderRadius: 7, background: d.isWeekend ? 'transparent' : 'white',
+                            }} />
+                          )
+                        }
+
+                        if (seg.busyCount === connectedMembers.length) {
+                          // All busy — dark block matching dashboard
+                          return (
+                            <div key={segIdx} style={{
+                              position: 'absolute', top, left: 3, right: 3, height,
+                              borderRadius: 7, background: '#111', zIndex: 2,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                              overflow: 'hidden',
+                            }}>
+                              <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 9px)' }} />
+                              {height > 16 && <span style={{ fontSize: 11, position: 'relative', zIndex: 1 }}>🔒</span>}
+                              {height > 28 && <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', position: 'relative', zIndex: 1 }}>busy</span>}
+                            </div>
+                          )
+                        }
+
+                        if (seg.freeCount === connectedMembers.length) {
+                          // All free — green dashed block matching dashboard
+                          return (
+                            <div key={segIdx} style={{
+                              position: 'absolute', top, left: 3, right: 3, height,
+                              borderRadius: 7, background: '#F0FDF4', border: '1.5px dashed rgba(16,185,129,0.45)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              zIndex: 1, overflow: 'hidden',
+                              transition: 'transform 0.1s, box-shadow 0.1s',
+                            }}
+                            onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'scale(1.02)'; el.style.boxShadow = '0 3px 10px rgba(0,0,0,0.08)' }}
+                            onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'scale(1)'; el.style.boxShadow = 'none' }}>
+                              {height > 18 && (
+                                <span style={{ fontSize: 9, fontWeight: 800, color: '#059669', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 6px' }}>
+                                  {connectedMembers.length === 1 ? 'free' : 'all free'}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        }
+
+                        // Partial — purple gradient
+                        const ratio = seg.freeCount / connectedMembers.length
+                        return (
+                          <div key={segIdx} style={{
+                            position: 'absolute', top, left: 3, right: 3, height,
+                            borderRadius: 7,
+                            background: `rgba(167,139,250,${0.15 + ratio * 0.5})`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: 1, overflow: 'hidden',
+                          }}>
+                            {height > 18 && (
+                              <span style={{ fontSize: 9, fontWeight: 700, color: '#6D28D9', whiteSpace: 'nowrap', padding: '0 4px' }}>
+                                {seg.freeCount}/{connectedMembers.length}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )
                 })}
@@ -421,7 +483,8 @@ export default function GroupPage() {
       </div>
 
       <p className="text-xs text-center text-[#A1A1AA]">
-        Availability is based on {connectedMembers.length} of {group.members.length} member{group.members.length !== 1 ? 's' : ''} with connected calendars.
+        {connectedMembers.length} of {group.members.length} member{group.members.length !== 1 ? 's' : ''} have connected calendars.
+        Only free/busy is shared — no event details.
       </p>
     </div>
   )

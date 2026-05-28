@@ -9,26 +9,31 @@ export const calendarRouter = Router()
 
 async function syncMemberBusy(memberId: string, auth: InstanceType<typeof google.auth.OAuth2>) {
   const now = new Date()
+  // Start from beginning of current week so past events in the week are included
+  const weekStart = new Date(now)
+  weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay())
+  weekStart.setUTCHours(0, 0, 0, 0)
   const twoWeeksOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
 
   const calendar = google.calendar({ version: 'v3', auth })
   const fbRes = await calendar.freebusy.query({
     requestBody: {
-      timeMin: now.toISOString(),
+      timeMin: weekStart.toISOString(),
       timeMax: twoWeeksOut.toISOString(),
       items: [{ id: 'primary' }],
     },
   })
 
   const busy = fbRes.data.calendars?.primary?.busy ?? []
-  if (busy.length === 0) return
 
-  // Delete stale slots then insert fresh ones
+  // Replace all slots for this member in the synced range
   await getDb()
     .deleteFrom('group_busy_slots')
     .where('member_id', '=', memberId)
-    .where('starts_at', '>=', now)
+    .where('starts_at', '>=', weekStart)
     .execute()
+
+  if (busy.length === 0) return
 
   await getDb()
     .insertInto('group_busy_slots')
