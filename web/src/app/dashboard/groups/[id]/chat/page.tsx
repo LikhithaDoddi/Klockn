@@ -75,7 +75,7 @@ export default function ChatPage() {
 
       const res = await api.post<{ success: boolean; data: { reply: string; suggestion: BookingSuggestion | null } }>(
         '/api/v1/ai/chat',
-        { groupId: id, message: text, history },
+        { groupId: id, message: text, history, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         { timeout: 35000 }
       )
 
