@@ -398,12 +398,6 @@ groupsRouter.post('/:id/refresh', async (req, res) => {
       .where('group_members.status', '=', 'calendar_connected')
       .execute()
 
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    )
-
     const now = new Date()
     const weekStart = new Date(now)
     weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay())
@@ -412,8 +406,13 @@ groupsRouter.post('/:id/refresh', async (req, res) => {
 
     await Promise.all(connections.map(async (conn) => {
       try {
-        oauth2Client.setCredentials({ refresh_token: decrypt(conn.refresh_token_encrypted) })
-        const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+        const client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI
+        )
+        client.setCredentials({ refresh_token: decrypt(conn.refresh_token_encrypted) })
+        const calendar = google.calendar({ version: 'v3', auth: client })
         const fbRes = await calendar.freebusy.query({
           requestBody: {
             timeMin: weekStart.toISOString(),
