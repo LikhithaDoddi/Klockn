@@ -5,13 +5,13 @@ export interface GroupMember {
   name: string | null
   email: string
   status: string
-  availability: MemberSlot[]
+  busyPeriods: BusyPeriod[]
 }
 
-export interface MemberSlot {
-  date: string   // 'YYYY-MM-DD'
-  hour: number   // 0–23
-  free: boolean
+export interface BusyPeriod {
+  date: string        // 'YYYY-MM-DD'
+  startMinute: number // 0–1439
+  endMinute: number   // 0–1439
 }
 
 export interface Group {

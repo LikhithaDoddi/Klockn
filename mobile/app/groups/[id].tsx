@@ -15,7 +15,7 @@ import { addDays, format, startOfWeek } from 'date-fns'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { api } from '@/lib/api'
-import { GroupMember } from '@/store/groupStore'
+import { GroupMember, BusyPeriod } from '@/store/groupStore'
 
 interface GroupDetail {
   id: string
@@ -24,28 +24,40 @@ interface GroupDetail {
 }
 
 const MEMBER_COLORS = ['#7C3AED', '#F97316', '#10B981', '#3B82F6', '#EC4899', '#F59E0B']
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
+const HOURS = Array.from({ length: 14 }, (_, i) => i + 7) // 7am–8pm
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-const POLL_INTERVAL = 30_000
+
+function getTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return 'UTC'
+  }
+}
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [group, setGroup] = useState<GroupDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [weekOffset, setWeekOffset] = useState(0)
 
-  const weekStart = format(startOfWeek(new Date()), 'yyyy-MM-dd')
+  const weekStart = format(
+    addDays(startOfWeek(new Date()), weekOffset * 7),
+    'yyyy-MM-dd'
+  )
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setError(null)
     try {
       const res = await api.get<{ success: boolean; data: GroupDetail }>(`/api/v1/groups/${id}`, {
-        params: { weekStart },
+        params: { weekStart, timezone: getTimezone() },
       })
       setGroup(res.data.data)
     } catch {
@@ -55,11 +67,31 @@ export default function GroupDetailScreen() {
     }
   }, [id, weekStart])
 
+  // On mount: refresh calendars from Google, then load
+  useEffect(() => {
+    let cancelled = false
+    api.post(`/api/v1/groups/${id}/refresh`).catch(() => null).finally(() => {
+      if (!cancelled) load()
+    })
+    return () => { cancelled = true }
+  }, [id])
+
+  // Reload when week changes
   useEffect(() => {
     load()
-    const poll = setInterval(() => load(true), POLL_INTERVAL)
-    return () => clearInterval(poll)
-  }, [load])
+  }, [weekStart])
+
+  async function handleManualRefresh() {
+    setRefreshing(true)
+    try {
+      await api.post(`/api/v1/groups/${id}/refresh`)
+      await load(true)
+    } catch {
+      // silent
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   async function handleRemoveMember(memberId: string, label: string) {
     Alert.alert('Remove member', `Remove ${label} from this group?`, [
@@ -148,6 +180,17 @@ export default function GroupDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.groupName} numberOfLines={1}>{group.name}</Text>
         <TouchableOpacity
+          onPress={handleManualRefresh}
+          disabled={refreshing}
+          style={styles.headerBtn}
+          activeOpacity={0.7}
+        >
+          {refreshing
+            ? <ActivityIndicator size="small" color={colors.violet} />
+            : <Ionicons name="refresh-outline" size={18} color={colors.violet} />
+          }
+        </TouchableOpacity>
+        <TouchableOpacity
           onPress={() => router.push({ pathname: '/chat/[groupId]', params: { groupId: id, groupName: group.name } })}
           style={styles.headerBtn}
           activeOpacity={0.7}
@@ -207,8 +250,29 @@ export default function GroupDetailScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>This week's availability</Text>
-        <Text style={styles.sectionSub}>Green = everyone is free</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>Availability</Text>
+          <View style={styles.weekNav}>
+            <TouchableOpacity
+              onPress={() => setWeekOffset((o) => o - 1)}
+              disabled={weekOffset <= 0}
+              style={[styles.navBtn, weekOffset <= 0 && styles.navBtnDisabled]}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={14} color={weekOffset <= 0 ? 'rgba(255,255,255,0.2)' : colors.violet} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setWeekOffset(0)} activeOpacity={0.7}>
+              <Text style={styles.todayBtn}>{weekOffset === 0 ? 'This week' : 'Today'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setWeekOffset((o) => o + 1)}
+              style={styles.navBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-forward" size={14} color={colors.violet} />
+            </TouchableOpacity>
+          </View>
+        </View>
         <MergedGrid members={group.members} weekStart={weekStart} />
       </View>
     </ScrollView>
@@ -247,6 +311,38 @@ function MemberRow({ member, color, removing, onRemove }: {
   )
 }
 
+function getSegments(members: GroupMember[], date: string, hour: number) {
+  const connected = members.filter((m) => m.status === 'calendar_connected')
+  if (connected.length === 0) return []
+
+  const cellStart = hour * 60
+  const cellEnd = (hour + 1) * 60
+  const points = new Set<number>([cellStart, cellEnd])
+
+  for (const m of connected) {
+    for (const p of (m.busyPeriods ?? [])) {
+      if (p.date !== date) continue
+      if (p.startMinute > cellStart && p.startMinute < cellEnd) points.add(p.startMinute)
+      if (p.endMinute > cellStart && p.endMinute < cellEnd) points.add(p.endMinute)
+    }
+  }
+
+  const sorted = Array.from(points).sort((a, b) => a - b)
+  return sorted.slice(0, -1).map((segStart, i) => {
+    const segEnd = sorted[i + 1]
+    const mid = (segStart + segEnd) / 2
+    const busyCount = connected.filter((m) =>
+      (m.busyPeriods ?? []).some((p) => p.date === date && p.startMinute <= mid && p.endMinute > mid)
+    ).length
+    return {
+      pct: (segEnd - segStart) / 60,
+      busyCount,
+      freeCount: connected.length - busyCount,
+      total: connected.length,
+    }
+  })
+}
+
 function MergedGrid({ members, weekStart }: { members: GroupMember[]; weekStart: string }) {
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(new Date(weekStart + 'T00:00:00'), i)
@@ -254,19 +350,7 @@ function MergedGrid({ members, weekStart }: { members: GroupMember[]; weekStart:
   })
 
   const today = format(new Date(), 'yyyy-MM-dd')
-
-  function allFree(date: string, hour: number): boolean {
-    if (members.length === 0) return false
-    return members.every((m) =>
-      (m.availability ?? []).some((s) => s.date === date && s.hour === hour && s.free)
-    )
-  }
-
-  function freeCount(date: string, hour: number): number {
-    return members.filter((m) =>
-      (m.availability ?? []).some((s) => s.date === date && s.hour === hour && s.free)
-    ).length
-  }
+  const connected = members.filter((m) => m.status === 'calendar_connected')
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -288,21 +372,31 @@ function MergedGrid({ members, weekStart }: { members: GroupMember[]; weekStart:
               {hour === 12 ? '12p' : hour > 12 ? `${hour - 12}p` : `${hour}a`}
             </Text>
             {days.map((d) => {
-              const everyone = allFree(d.date, hour)
-              const count = freeCount(d.date, hour)
-              const opacity = members.length > 0 ? count / members.length : 0
+              const segs = getSegments(members, d.date, hour)
+              if (segs.length === 0) {
+                return <View key={d.date} style={[gridStyles.cell, gridStyles.emptyCell]} />
+              }
               return (
-                <View
-                  key={d.date}
-                  style={[
-                    gridStyles.cell,
-                    everyone
-                      ? gridStyles.allFreeCell
-                      : count > 0
-                        ? [gridStyles.partialCell, { opacity: 0.3 + opacity * 0.7 }]
-                        : gridStyles.busyCell,
-                  ]}
-                />
+                <View key={d.date} style={gridStyles.cell}>
+                  {segs.map((seg, si) => {
+                    const allFree = seg.busyCount === 0
+                    const allBusy = seg.freeCount === 0
+                    const bg = allFree
+                      ? '#10B981'
+                      : allBusy
+                        ? 'rgba(239,68,68,0.25)'
+                        : `rgba(167,139,250,${0.2 + (seg.freeCount / seg.total) * 0.5})`
+                    return (
+                      <View
+                        key={si}
+                        style={[
+                          gridStyles.segment,
+                          { flex: seg.pct, backgroundColor: bg },
+                        ]}
+                      />
+                    )
+                  })}
+                </View>
               )
             })}
           </View>
@@ -311,11 +405,15 @@ function MergedGrid({ members, weekStart }: { members: GroupMember[]; weekStart:
         <View style={gridStyles.legend}>
           <View style={[gridStyles.legendDot, { backgroundColor: '#10B981' }]} />
           <Text style={gridStyles.legendText}>All free</Text>
-          <View style={[gridStyles.legendDot, { backgroundColor: 'rgba(167,139,250,0.4)' }]} />
+          <View style={[gridStyles.legendDot, { backgroundColor: 'rgba(167,139,250,0.5)' }]} />
           <Text style={gridStyles.legendText}>Some free</Text>
-          <View style={[gridStyles.legendDot, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+          <View style={[gridStyles.legendDot, { backgroundColor: 'rgba(239,68,68,0.25)' }]} />
           <Text style={gridStyles.legendText}>All busy</Text>
         </View>
+
+        {connected.length === 0 && (
+          <Text style={gridStyles.noData}>No members have connected their calendar yet.</Text>
+        )}
       </View>
     </ScrollView>
   )
@@ -398,8 +496,19 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
-  sectionSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: -6 },
+  weekNav: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  navBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(124,58,237,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navBtnDisabled: { opacity: 0.3 },
+  todayBtn: { fontSize: 12, fontWeight: '600', color: colors.violet },
   separator: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   memberAvatar: {
@@ -423,7 +532,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 20,
   },
-  statusConnected: { backgroundColor: 'rgba(16,185,129,0.15)', color: colors.greenLight },
+  statusConnected: { backgroundColor: 'rgba(16,185,129,0.15)', color: '#6EE7B7' },
   removeBtn: { padding: 2 },
 })
 
@@ -433,13 +542,13 @@ const gridStyles = StyleSheet.create({
   dayCol: { width: 36, alignItems: 'center' },
   dayLabel: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' },
   todayLabel: { color: colors.violet },
-  hourRow: { flexDirection: 'row', height: 32 },
+  hourRow: { flexDirection: 'row', height: 32, alignItems: 'stretch' },
   hourLabel: { width: 36, fontSize: 9, color: 'rgba(255,255,255,0.25)', textAlign: 'right', paddingRight: 4, paddingTop: 2 },
-  cell: { width: 32, height: 30, margin: 2, borderRadius: 4 },
-  allFreeCell: { backgroundColor: '#10B981' },
-  partialCell: { backgroundColor: 'rgba(167,139,250,0.4)' },
-  busyCell: { backgroundColor: 'rgba(255,255,255,0.04)' },
+  cell: { width: 32, height: 30, margin: 2, borderRadius: 4, overflow: 'hidden', flexDirection: 'column' },
+  emptyCell: { backgroundColor: 'rgba(255,255,255,0.04)' },
+  segment: { width: '100%' },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 12, justifyContent: 'center' },
   legendDot: { width: 10, height: 10, borderRadius: 3 },
   legendText: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginRight: 8 },
+  noData: { fontSize: 12, color: 'rgba(255,255,255,0.25)', textAlign: 'center', paddingTop: 8 },
 })
