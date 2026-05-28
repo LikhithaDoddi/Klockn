@@ -32,8 +32,8 @@ All secrets live here in production. ECS task definition pulls at runtime. Never
 ### AWS S3 (file storage)
 CSV exports, profile images.
 
-### AWS SES (email)
-Transactional email — invite emails, confirmations. Sending domain: `klockn.com`.
+### Resend (email)
+Transactional email — invite emails, confirmations. Sending domain: `klockn.com`. Uses `RESEND_API_KEY` via `https://api.resend.com/emails`.
 
 ### AWS ECR (container registry)
 Stores Docker images. GitHub Actions builds and pushes on every deploy.
@@ -73,7 +73,7 @@ backend/
 │   └── lib/
 │       ├── firebase.ts
 │       ├── logger.ts           # Winston logger
-│       ├── email.ts            # AWS SES client
+│       ├── email.ts            # Resend email client
 │       ├── encrypt.ts          # AES-256-GCM for calendar tokens
 │       └── stripe.ts
 └── .env.example
@@ -141,9 +141,8 @@ FIREBASE_PROJECT_ID
 FIREBASE_CLIENT_EMAIL
 FIREBASE_PRIVATE_KEY
 REDIS_URL             # ElastiCache Redis connection string
-AWS_SES_REGION=us-east-1
+RESEND_API_KEY        # Resend email API key
 AWS_S3_BUCKET=klockn-storage
-EMAIL_FROM=noreply@klockn.com
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
 STRIPE_PLATFORM_FEE_PERCENT=2

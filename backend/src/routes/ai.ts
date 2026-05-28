@@ -109,6 +109,7 @@ aiRouter.post('/chat', validate(chatSchema), async (req, res) => {
     const aiUrl = process.env.AI_SERVICE_URL ?? 'http://localhost:5000'
     const aiRes = await fetch(`${aiUrl}/chat`, {
       method: 'POST',
+      signal: AbortSignal.timeout(30000),
       headers: {
         'Content-Type': 'application/json',
         'x-internal-secret': process.env.AI_SERVICE_SECRET ?? '',

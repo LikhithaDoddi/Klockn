@@ -1,12 +1,12 @@
+'use client'
+
 export const dynamic = 'force-dynamic'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
 export default function CreateEventPage() {
-  return (
-    <div>
-      <h1>Create Event</h1>
-      {/* Step 1: Event name, description, rough date range */}
-      {/* Step 2: Upload attendee list (CSV or manual email entry) */}
-      {/* Step 3: Review and send invites */}
-    </div>
-  )
+  const router = useRouter()
+  useEffect(() => { router.replace('/dashboard') }, [router])
+  return null
 }

@@ -75,7 +75,8 @@ export default function ChatPage() {
 
       const res = await api.post<{ success: boolean; data: { reply: string; suggestion: BookingSuggestion | null } }>(
         '/api/v1/ai/chat',
-        { groupId: id, message: text, history }
+        { groupId: id, message: text, history },
+        { timeout: 35000 }
       )
 
       setMessages((prev) => [

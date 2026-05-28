@@ -49,10 +49,9 @@ function OnboardingContent() {
 
   useEffect(() => {
     if (!user) return
-    const calendarConnected = params.get('calendar') === 'connected'
     api.get<{ success: boolean; data: { connected: boolean } }>('/api/v1/me/calendar')
       .then((r) => {
-        if (r.data.data.connected || calendarConnected) {
+        if (r.data.data.connected) {
           setCalendarStatus('connected')
           setStep('invite')
         } else {
