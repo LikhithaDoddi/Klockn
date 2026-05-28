@@ -36,6 +36,8 @@ export default function GroupPage() {
   const [weekOffset, setWeekOffset] = useState(0)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+
   const weekStart = format(
     (() => { const d = startOfWeek(new Date()); d.setDate(d.getDate() + weekOffset * 7); return d })(),
     'yyyy-MM-dd'
@@ -45,7 +47,7 @@ export default function GroupPage() {
     if (!silent) setError(null)
     try {
       const res = await api.get<{ success: boolean; data: GroupDetail }>(`/api/v1/groups/${id}`, {
-        params: { weekStart },
+        params: { weekStart, timezone: tz },
       })
       setGroup(res.data.data)
     } catch {
