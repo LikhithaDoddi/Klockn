@@ -22,7 +22,14 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Klockn does not use your camera.",
         "NSPhotoLibraryUsageDescription": "Klockn does not access your photos.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.439208454942-c55pigljsnapf4bv40kvo47rm7isefm0"
+            ]
+          }
+        ]
       }
     },
     "android": {
