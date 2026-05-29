@@ -5,7 +5,7 @@ import { chat, ChatTurn } from '../chat/bookingChat'
 export const chatRouter = Router()
 
 const chatSchema = z.object({
-  groupId: z.string().uuid(),
+  groupId: z.string().uuid().optional(),
   message: z.string().min(1).max(500),
   history: z.array(z.object({
     role: z.enum(['user', 'assistant']),
