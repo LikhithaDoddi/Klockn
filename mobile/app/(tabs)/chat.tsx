@@ -38,7 +38,6 @@ export default function ChatScreen() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const listRef = useRef<FlatList>(null)
-  const conversationId = useRef<string | undefined>(undefined)
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || loading) return
@@ -52,11 +51,12 @@ export default function ChatScreen() {
     setInput('')
     setLoading(true)
     try {
-      const res = await api.post<{ success: boolean; data: { reply: string; conversationId: string } }>(
+      const history = messages.map((m) => ({ role: m.role, content: m.content }))
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const res = await api.post<{ success: boolean; data: { reply: string } }>(
         '/api/v1/ai/chat',
-        { message: text.trim(), conversationId: conversationId.current }
+        { message: text.trim(), history, timezone }
       )
-      conversationId.current = res.data.data.conversationId
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',

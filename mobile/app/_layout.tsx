@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { ActivityIndicator, Platform, View } from 'react-native'
-import { Stack, router } from 'expo-router'
+import { Stack, router, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '@/store/authStore'
 import { initAuthListener } from '@/lib/auth'
@@ -9,6 +9,7 @@ import { colors } from '@/constants/colors'
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading } = useAuthStore()
+  const segments = useSegments()
   const notificationListener = useRef<{ remove: () => void } | null>(null)
   const responseListener = useRef<{ remove: () => void } | null>(null)
 
@@ -19,12 +20,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (isLoading) return
-    if (!isAuthenticated) {
+    const inAuthGroup = segments[0] === 'auth' || segments[0] === 'onboarding'
+    if (!isAuthenticated && !inAuthGroup) {
       router.replace('/onboarding')
-    } else {
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)/groups')
+    } else if (isAuthenticated) {
       registerPushToken()
     }
-  }, [isAuthenticated, isLoading])
+  }, [isAuthenticated, isLoading, segments])
 
   useEffect(() => {
     if (Platform.OS === 'web') return

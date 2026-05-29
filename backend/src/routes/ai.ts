@@ -10,7 +10,7 @@ export const aiRouter = Router()
 aiRouter.use(requireAuth)
 
 const chatSchema = z.object({
-  groupId: z.string().uuid(),
+  groupId: z.string().uuid().optional(),
   message: z.string().min(1).max(500),
   timezone: z.string().default('UTC'),
   history: z.array(z.object({
@@ -22,7 +22,7 @@ const chatSchema = z.object({
 aiRouter.post('/chat', validate(chatSchema), async (req, res) => {
   try {
     const { groupId, message, history, timezone } = req.body as {
-      groupId: string
+      groupId?: string
       message: string
       timezone: string
       history: Array<{ role: 'user' | 'assistant'; content: string }>
@@ -38,33 +38,37 @@ aiRouter.post('/chat', validate(chatSchema), async (req, res) => {
       return res.status(404).json({ success: false, error: 'User profile not found' })
     }
 
-    // Allow access if user is organizer OR a member of the group
-    const group = await getDb()
-      .selectFrom('groups')
-      .leftJoin('group_members as my_membership', (join) =>
-        join.onRef('my_membership.group_id', '=', 'groups.id')
-          .on('my_membership.email', '=', organizer.email)
-      )
-      .select(['groups.id', 'groups.name'])
-      .where('groups.id', '=', groupId)
-      .where((eb) =>
-        eb.or([
-          eb('groups.organizer_id', '=', organizer.id),
-          eb('my_membership.id', 'is not', null),
-        ])
-      )
-      .executeTakeFirst()
+    let members: Array<{ id: string }> = []
 
-    if (!group) {
-      return res.status(404).json({ success: false, error: 'Group not found' })
+    if (groupId) {
+      // Allow access if user is organizer OR a member of the group
+      const group = await getDb()
+        .selectFrom('groups')
+        .leftJoin('group_members as my_membership', (join) =>
+          join.onRef('my_membership.group_id', '=', 'groups.id')
+            .on('my_membership.email', '=', organizer.email)
+        )
+        .select(['groups.id', 'groups.name'])
+        .where('groups.id', '=', groupId)
+        .where((eb) =>
+          eb.or([
+            eb('groups.organizer_id', '=', organizer.id),
+            eb('my_membership.id', 'is not', null),
+          ])
+        )
+        .executeTakeFirst()
+
+      if (!group) {
+        return res.status(404).json({ success: false, error: 'Group not found' })
+      }
+
+      members = await getDb()
+        .selectFrom('group_members')
+        .select('id')
+        .where('group_id', '=', groupId)
+        .where('status', '=', 'calendar_connected')
+        .execute()
     }
-
-    const members = await getDb()
-      .selectFrom('group_members')
-      .select('id')
-      .where('group_id', '=', groupId)
-      .where('status', '=', 'calendar_connected')
-      .execute()
 
     const now = new Date()
     const twoWeeksOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
