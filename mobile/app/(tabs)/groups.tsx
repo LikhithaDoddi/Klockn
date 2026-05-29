@@ -10,6 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { KlocknLogo } from '@/components/KlocknLogo'
 import { colors } from '@/constants/colors'
 import { useGroupStore, Group } from '@/store/groupStore'
@@ -19,6 +20,7 @@ export default function GroupsScreen() {
   const { groups, setGroups } = useGroupStore()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const tabBarHeight = useBottomTabBarHeight()
 
   const load = useCallback(async () => {
     setError(null)
@@ -91,7 +93,7 @@ export default function GroupsScreen() {
       />
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarHeight + 16 }]}
         onPress={() => router.push('/groups/create')}
         activeOpacity={0.7}
       >
