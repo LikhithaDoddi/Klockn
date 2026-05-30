@@ -5,9 +5,13 @@ import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '@/store/authStore'
 import { initAuthListener } from '@/lib/auth'
 import { registerPushToken, Notifications } from '@/lib/notifications'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { initSentry, Sentry } from '@/lib/sentry'
 import { colors } from '@/constants/colors'
 
-export default function RootLayout() {
+initSentry()
+
+function RootLayout() {
   const { isAuthenticated, isLoading } = useAuthStore()
   const notificationListener = useRef<{ remove: () => void } | null>(null)
   const responseListener = useRef<{ remove: () => void } | null>(null)
@@ -17,13 +21,11 @@ export default function RootLayout() {
     return unsubscribe
   }, [])
 
+  // Navigation is owned by the index gate (cold start) and explicit redirects in
+  // login/signup/sign-out. Here we only register for push once authenticated.
   useEffect(() => {
-    if (isLoading) return
-    if (!isAuthenticated) {
-      router.replace('/onboarding')
-    } else {
-      registerPushToken()
-    }
+    if (isLoading || !isAuthenticated) return
+    registerPushToken()
   }, [isAuthenticated, isLoading])
 
   useEffect(() => {
@@ -45,16 +47,17 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark }}>
         <ActivityIndicator color={colors.purple} size="large" />
       </View>
     )
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
         <Stack.Screen name="onboarding/index" />
         <Stack.Screen name="auth/login" />
         <Stack.Screen name="auth/signup" />
@@ -64,6 +67,8 @@ export default function RootLayout() {
         <Stack.Screen name="invite/[token]" options={{ headerShown: true, title: "You're Invited" }} />
         <Stack.Screen name="chat/[groupId]" />
       </Stack>
-    </>
+    </ErrorBoundary>
   )
 }
+
+export default Sentry.wrap(RootLayout)
