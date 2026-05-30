@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
 import { api } from '@/lib/api'
@@ -20,6 +21,7 @@ function genId() { return Math.random().toString(36).slice(2) + Date.now().toStr
 
 export default function ChatScreen() {
   const { groupId, groupName } = useLocalSearchParams<{ groupId: string; groupName: string }>()
+  const insets = useSafeAreaInsets()
   const { messages, addMessage } = useChatStore()
   const groupMessages = messages[groupId] ?? []
   const [input, setInput] = useState('')
@@ -90,7 +92,7 @@ export default function ChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color={colors.violet} />
         </TouchableOpacity>
@@ -189,7 +191,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 12,
     backgroundColor: '#111',
     borderBottomWidth: 1,
