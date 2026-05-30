@@ -143,10 +143,17 @@ export default function GroupDetailScreen() {
     }
     setInviting(true)
     try {
-      await api.post(`/api/v1/groups/${id}/invite`, { emails: [trimmed] })
+      const res = await api.post(`/api/v1/groups/${id}/invite`, { emails: [trimmed] })
+      const invited = (res.data?.data as { invited?: unknown[] } | undefined)?.invited
+      const alreadyMember = Array.isArray(invited) && invited.length === 0
       setInviteEmail('')
       setShowInvite(false)
-      Alert.alert('Invite sent', `An invite was sent to ${trimmed}.`)
+      Alert.alert(
+        alreadyMember ? 'Already in this group' : 'Invite sent',
+        alreadyMember
+          ? `${trimmed} is already a member of this group.`
+          : `An invite was sent to ${trimmed}.`,
+      )
       await load()
     } catch {
       Alert.alert('Error', 'Could not send invite. Check the email and try again.')

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -17,6 +18,7 @@ import { api } from '@/lib/api'
 
 export default function GroupsScreen() {
   const { groups, setGroups } = useGroupStore()
+  const tabBarHeight = useBottomTabBarHeight()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,7 +68,7 @@ export default function GroupsScreen() {
         data={groups}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <GroupRow group={item} />}
-        contentContainerStyle={groups.length === 0 ? styles.emptyList : styles.list}
+        contentContainerStyle={groups.length === 0 ? styles.emptyList : [styles.list, { paddingBottom: tabBarHeight + 88 }]}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         ListEmptyComponent={
           error ? (
@@ -91,7 +93,7 @@ export default function GroupsScreen() {
       />
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarHeight + 16 }]}
         onPress={() => router.push('/groups/create')}
         activeOpacity={0.7}
       >
@@ -250,7 +252,6 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
     right: 24,
     width: 56,
     height: 56,
