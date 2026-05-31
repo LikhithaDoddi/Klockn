@@ -95,6 +95,10 @@
         {
           "name": "AI_SERVICE_SECRET",
           "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/AI_SERVICE_SECRET"
+        },
+        {
+          "name": "RESEND_API_KEY",
+          "valueFrom": "arn:aws:ssm:us-east-2:341738836873:parameter/klockn/RESEND_API_KEY"
         }
       ],
       "logConfiguration": {
