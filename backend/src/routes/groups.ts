@@ -479,10 +479,14 @@ groupsRouter.delete('/:id', async (req, res) => {
       await getDb().deleteFrom('group_members').where('group_id', '=', group.id).execute()
     }
 
+    // Remove share/join links before the group — they FK to groups(id) and
+    // otherwise block the delete (was a silent 500).
+    await getDb().deleteFrom('group_join_links').where('group_id', '=', group.id).execute()
     await getDb().deleteFrom('groups').where('id', '=', group.id).execute()
 
     return res.json({ success: true })
   } catch (err) {
+    logger.error('Failed to delete group', { error: err instanceof Error ? err.message : String(err) })
     return res.status(500).json({ success: false, error: 'Failed to delete group' })
   }
 })
