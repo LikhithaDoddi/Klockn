@@ -114,7 +114,8 @@ export default function AIChatScreen() {
           message: trimmed,
           history,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }
+        },
+        { timeout: 45000 }, // AI replies can take longer than the default 10s
       )
       addMessage(selectedGroupId, {
         id: genId(),

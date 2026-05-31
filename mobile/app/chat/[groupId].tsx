@@ -65,7 +65,8 @@ export default function ChatScreen() {
         .map((m) => ({ role: m.role, content: m.content }))
       const res = await api.post<{ success: boolean; data: { reply: string; suggestion?: BookingSuggestion } }>(
         '/api/v1/ai/chat',
-        { groupId, message: text, history, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+        { groupId, message: text, history, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        { timeout: 45000 }, // AI replies can take longer than the default 10s
       )
       addMessage(groupId, {
         id: genId(),
