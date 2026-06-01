@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { ActivityIndicator, Platform, View } from 'react-native'
-import { Stack, router } from 'expo-router'
+import { Stack, router, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '@/store/authStore'
 import { initAuthListener } from '@/lib/auth'
@@ -13,6 +13,7 @@ initSentry()
 
 function RootLayout() {
   const { isAuthenticated, isLoading } = useAuthStore()
+  const segments = useSegments()
   const notificationListener = useRef<{ remove: () => void } | null>(null)
   const responseListener = useRef<{ remove: () => void } | null>(null)
 
@@ -21,12 +22,17 @@ function RootLayout() {
     return unsubscribe
   }, [])
 
-  // Navigation is owned by the index gate (cold start) and explicit redirects in
-  // login/signup/sign-out. Here we only register for push once authenticated.
   useEffect(() => {
-    if (isLoading || !isAuthenticated) return
-    registerPushToken()
-  }, [isAuthenticated, isLoading])
+    if (isLoading) return
+    const inAuthGroup = segments[0] === 'auth' || segments[0] === 'onboarding'
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace('/onboarding')
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)/groups')
+    } else if (isAuthenticated) {
+      registerPushToken()
+    }
+  }, [isAuthenticated, isLoading, segments])
 
   useEffect(() => {
     if (Platform.OS === 'web') return
@@ -47,7 +53,7 @@ function RootLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white }}>
         <ActivityIndicator color={colors.purple} size="large" />
       </View>
     )
@@ -57,7 +63,6 @@ function RootLayout() {
     <ErrorBoundary>
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
         <Stack.Screen name="onboarding/index" />
         <Stack.Screen name="auth/login" />
         <Stack.Screen name="auth/signup" />

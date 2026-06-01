@@ -55,8 +55,12 @@ export default function ActivityScreen() {
     try {
       const res = await api.get<{ success: boolean; data: ActivityItem[] }>('/api/v1/activity')
       setItems(res.data.data ?? [])
-    } catch {
-      setError('Could not load activity.')
+    } catch (e: unknown) {
+      // 404 means endpoint not yet available — show empty state, not error
+      const status = e && typeof e === 'object' && 'response' in e
+        ? (e as { response?: { status?: number } }).response?.status
+        : undefined
+      if (status !== 404) setError('Could not load activity.')
     } finally {
       setLoading(false)
     }
