@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/constants/colors'
@@ -37,6 +38,7 @@ function getTimezone(): string {
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const insets = useSafeAreaInsets()
   const [group, setGroup] = useState<GroupDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -141,10 +143,17 @@ export default function GroupDetailScreen() {
     }
     setInviting(true)
     try {
-      await api.post(`/api/v1/groups/${id}/invite`, { emails: [trimmed] })
+      const res = await api.post(`/api/v1/groups/${id}/invite`, { emails: [trimmed] })
+      const invited = (res.data?.data as { invited?: unknown[] } | undefined)?.invited
+      const alreadyMember = Array.isArray(invited) && invited.length === 0
       setInviteEmail('')
       setShowInvite(false)
-      Alert.alert('Invite sent', `An invite was sent to ${trimmed}.`)
+      Alert.alert(
+        alreadyMember ? 'Already in this group' : 'Invite sent',
+        alreadyMember
+          ? `${trimmed} is already a member of this group.`
+          : `An invite was sent to ${trimmed}.`,
+      )
       await load()
     } catch {
       Alert.alert('Error', 'Could not send invite. Check the email and try again.')
@@ -174,7 +183,7 @@ export default function GroupDetailScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color={colors.violet} />
         </TouchableOpacity>
@@ -262,7 +271,11 @@ export default function GroupDetailScreen() {
               <Ionicons name="chevron-back" size={14} color={weekOffset <= 0 ? 'rgba(255,255,255,0.2)' : colors.violet} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setWeekOffset(0)} activeOpacity={0.7}>
-              <Text style={styles.todayBtn}>{weekOffset === 0 ? 'This week' : 'Today'}</Text>
+              <Text style={styles.todayBtn}>
+                {weekOffset === 0
+                  ? 'This week'
+                  : `${format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – ${format(addDays(new Date(weekStart + 'T00:00:00'), 6), 'MMM d')}`}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setWeekOffset((o) => o + 1)}
@@ -435,7 +448,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
     gap: 10,
   },
   backBtn: { padding: 4 },

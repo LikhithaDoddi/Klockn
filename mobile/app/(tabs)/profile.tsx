@@ -4,10 +4,13 @@ import { router } from 'expo-router'
 import { colors } from '@/constants/colors'
 import { useAuthStore } from '@/store/authStore'
 import { signOut } from '@/lib/auth'
+import { api } from '@/lib/api'
+import { auth } from '@/lib/firebase'
 
 export default function ProfileScreen() {
   const { user } = useAuthStore()
   const [signingOut, setSigningOut] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -26,6 +29,37 @@ export default function ProfileScreen() {
         },
       },
     ])
+  }
+
+  async function handleDeleteAccount() {
+    Alert.alert(
+      'Delete account',
+      'This permanently deletes your account, your groups, and all your data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true)
+            try {
+              // Backend wipes all account data; then remove the Firebase auth user.
+              await api.delete('/api/v1/me')
+              try {
+                await auth.currentUser?.delete()
+              } catch {
+                // requires-recent-login can block this; data is already deleted, so sign out anyway.
+              }
+              await signOut()
+              router.replace('/onboarding')
+            } catch {
+              Alert.alert('Error', 'Could not delete your account. Please try again.')
+              setDeleting(false)
+            }
+          },
+        },
+      ],
+    )
   }
 
   const initials = user?.displayName
@@ -66,6 +100,15 @@ export default function ProfileScreen() {
         activeOpacity={0.7}
       >
         <Text style={styles.signOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.deleteAccountBtn}
+        onPress={handleDeleteAccount}
+        disabled={deleting}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.deleteAccountText}>{deleting ? 'Deleting…' : 'Delete account'}</Text>
       </TouchableOpacity>
     </ScrollView>
   )
@@ -175,6 +218,21 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     fontSize: 15,
+    fontWeight: '600',
+    color: colors.red,
+  },
+  deleteAccountBtn: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteAccountText: {
+    fontSize: 14,
     fontWeight: '600',
     color: colors.red,
   },
