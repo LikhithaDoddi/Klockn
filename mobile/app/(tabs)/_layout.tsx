@@ -69,12 +69,22 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'AI',
+          headerShown: false,
+          tabBarIcon: tabIcon('sparkles-outline', 'sparkles'),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: tabIcon('person-outline', 'person'),
         }}
       />
+      {/* Reachable via deep links / navigation, but not shown in the tab bar yet. */}
+      <Tabs.Screen name="activity" options={{ href: null }} />
     </Tabs>
   )
 }

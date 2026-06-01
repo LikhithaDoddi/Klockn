@@ -55,7 +55,8 @@ export default function ChatScreen() {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       const res = await api.post<{ success: boolean; data: { reply: string } }>(
         '/api/v1/ai/chat',
-        { message: text.trim(), history, timezone }
+        { message: text.trim(), history, timezone },
+        { timeout: 45000 }, // AI replies can take longer than the default 10s
       )
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),

@@ -26,6 +26,8 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
+              "klockn",
+              "com.klockn.app",
               "com.googleusercontent.apps.439208454942-c55pigljsnapf4bv40kvo47rm7isefm0"
             ]
           }

@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { signInWithEmailAndPassword, GoogleAuthProvider, OAuthProvider, signInWithCredential } from 'firebase/auth'
 import * as WebBrowser from 'expo-web-browser'
 import * as Google from 'expo-auth-session/providers/google'
 import * as AppleAuthentication from 'expo-apple-authentication'
+import * as ExpoCrypto from 'expo-crypto'
 import { auth } from '@/lib/firebase'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
@@ -15,12 +16,8 @@ import { colors } from '@/constants/colors'
 WebBrowser.maybeCompleteAuthSession()
 
 async function generateNonce(): Promise<{ raw: string; hashed: string }> {
-  const array = new Uint8Array(32)
-  crypto.getRandomValues(array)
-  const raw = Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')
-  const data = new TextEncoder().encode(raw)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashed = Array.from(new Uint8Array(hashBuffer), (b) => b.toString(16).padStart(2, '0')).join('')
+  const raw = Array.from(ExpoCrypto.getRandomBytes(32), (b) => b.toString(16).padStart(2, '0')).join('')
+  const hashed = await ExpoCrypto.digestStringAsync(ExpoCrypto.CryptoDigestAlgorithm.SHA256, raw)
   return { raw, hashed }
 }
 
@@ -32,29 +29,43 @@ export default function LoginScreen() {
   const [appleLoading, setAppleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [, , promptAsync] = Google.useIdTokenAuthRequest({
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  const hasGoogleConfig = !!process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+  const [, googleResponse, promptAsync] = Google.useIdTokenAuthRequest({
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? 'MISSING',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? 'MISSING',
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? 'MISSING',
   })
 
-  async function handleGoogleLogin() {
-    setGoogleLoading(true)
-    setError(null)
-    try {
-      const result = await promptAsync()
-      if (result?.type === 'success') {
-        const idToken = result.params.id_token
-        const credential = GoogleAuthProvider.credential(idToken)
-        const { user } = await signInWithCredential(auth, credential)
+  // On native, useIdTokenAuthRequest runs a PKCE code flow: promptAsync() resolves
+  // with only an auth code, and the id_token is exchanged asynchronously and
+  // surfaced here via googleResponse. We must read it from the response — reading
+  // it from promptAsync()'s return is undefined on iOS/Android.
+  useEffect(() => {
+    if (!googleResponse) return
+    if (googleResponse.type !== 'success') {
+      setGoogleLoading(false)
+      return
+    }
+    const idToken = googleResponse.params.id_token
+    if (!idToken) {
+      setError('Google sign-in failed. Try again.')
+      setGoogleLoading(false)
+      return
+    }
+    const credential = GoogleAuthProvider.credential(idToken)
+    signInWithCredential(auth, credential)
+      .then(async ({ user }) => {
         await api.post('/api/v1/users', { name: user.displayName ?? '' }).catch(() => {})
         router.replace('/(tabs)/groups')
-      }
-    } catch {
-      setError('Google sign-in failed. Try again.')
-    } finally {
-      setGoogleLoading(false)
-    }
+      })
+      .catch(() => setError('Google sign-in failed. Try again.'))
+      .finally(() => setGoogleLoading(false))
+  }, [googleResponse])
+
+  function handleGoogleLogin() {
+    setError(null)
+    setGoogleLoading(true)
+    promptAsync()
   }
 
   async function handleAppleLogin() {
@@ -69,9 +80,12 @@ export default function LoginScreen() {
         ],
         nonce: hashed,
       })
+      if (!credential.identityToken) {
+        throw new Error('Apple did not return an identity token')
+      }
       const provider = new OAuthProvider('apple.com')
       const firebaseCredential = provider.credential({
-        idToken: credential.identityToken!,
+        idToken: credential.identityToken,
         rawNonce: raw,
       })
       const { user } = await signInWithCredential(auth, firebaseCredential)
@@ -123,13 +137,15 @@ export default function LoginScreen() {
 
         <View style={styles.form}>
           {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
-          <Button
-            label="Continue with Google"
-            onPress={handleGoogleLogin}
-            loading={googleLoading}
-            variant="secondary"
-            fullWidth
-          />
+          {hasGoogleConfig && (
+            <Button
+              label="Continue with Google"
+              onPress={handleGoogleLogin}
+              loading={googleLoading}
+              variant="secondary"
+              fullWidth
+            />
+          )}
           {Platform.OS === 'ios' && (
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
