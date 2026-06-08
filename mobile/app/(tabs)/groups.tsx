@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { KlocknLogo } from '@/components/KlocknLogo'
 import { colors } from '@/constants/colors'
 import { useGroupStore, Group } from '@/store/groupStore'
@@ -18,9 +18,9 @@ import { api } from '@/lib/api'
 
 export default function GroupsScreen() {
   const { groups, setGroups } = useGroupStore()
+  const tabBarHeight = useBottomTabBarHeight()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const tabBarHeight = useBottomTabBarHeight()
 
   const load = useCallback(async () => {
     setError(null)
@@ -68,7 +68,7 @@ export default function GroupsScreen() {
         data={groups}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <GroupRow group={item} />}
-        contentContainerStyle={groups.length === 0 ? styles.emptyList : styles.list}
+        contentContainerStyle={groups.length === 0 ? styles.emptyList : [styles.list, { paddingBottom: tabBarHeight + 88 }]}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         ListEmptyComponent={
           error ? (
@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
     right: 24,
     width: 56,
     height: 56,

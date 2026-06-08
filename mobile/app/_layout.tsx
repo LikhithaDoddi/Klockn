@@ -5,9 +5,13 @@ import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '@/store/authStore'
 import { initAuthListener } from '@/lib/auth'
 import { registerPushToken, Notifications } from '@/lib/notifications'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { initSentry, Sentry } from '@/lib/sentry'
 import { colors } from '@/constants/colors'
 
-export default function RootLayout() {
+initSentry()
+
+function RootLayout() {
   const { isAuthenticated, isLoading } = useAuthStore()
   const segments = useSegments()
   const notificationListener = useRef<{ remove: () => void } | null>(null)
@@ -56,9 +60,10 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
         <Stack.Screen name="onboarding/index" />
         <Stack.Screen name="auth/login" />
         <Stack.Screen name="auth/signup" />
@@ -68,6 +73,8 @@ export default function RootLayout() {
         <Stack.Screen name="invite/[token]" options={{ headerShown: true, title: "You're Invited" }} />
         <Stack.Screen name="chat/[groupId]" />
       </Stack>
-    </>
+    </ErrorBoundary>
   )
 }
+
+export default Sentry.wrap(RootLayout)

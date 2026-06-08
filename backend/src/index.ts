@@ -21,7 +21,21 @@ import { inviteRouter } from './routes/invite'
 import { internalRouter } from './routes/internal'
 import { aiRouter } from './routes/ai'
 import { startWorkers } from './jobs/worker'
+import { validateEnv } from './lib/env'
 
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+  })
+})
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught exception — shutting down', { error: err.message, stack: err.stack })
+  process.exit(1)
+})
+
+validateEnv()
 initFirebase()
 initDb()
 if (process.env.NODE_ENV === 'production') {
@@ -30,6 +44,10 @@ if (process.env.NODE_ENV === 'production') {
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
+
+// Behind the ALB the real client IP lives in X-Forwarded-For; trust one proxy
+// hop so express-rate-limit keys on the client rather than the load balancer.
+app.set('trust proxy', 1)
 
 app.use(helmet())
 
@@ -66,6 +84,19 @@ app.use('/api/v1/events', eventsRouter)
 app.use('/api/v1/attendees', attendeesRouter)
 app.use('/api/v1/calendar', calendarRouter)
 app.use('/api/v1/tickets', ticketsRouter)
+
+// Centralized error handler — preserves the { success, error } contract and
+// never leaks stack traces to clients. Must be the last middleware registered.
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error('Unhandled request error', {
+    method: req.method,
+    path: req.path,
+    error: err.message,
+    stack: err.stack,
+  })
+  if (res.headersSent) return next(err)
+  res.status(500).json({ success: false, error: 'Internal server error' })
+})
 
 app.listen(PORT, () => {
   logger.info(`Klockn backend running on port ${PORT}`)

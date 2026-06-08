@@ -54,18 +54,18 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="activity"
-        options={{
-          title: 'Activity',
-          headerShown: false,
-          tabBarIcon: tabIcon('notifications-outline', 'notifications'),
-        }}
-      />
-      <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
           tabBarIcon: tabIcon('calendar-outline', 'calendar'),
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'AI',
+          headerShown: false,
+          tabBarIcon: tabIcon('sparkles-outline', 'sparkles'),
         }}
       />
       <Tabs.Screen
@@ -75,6 +75,8 @@ export default function TabsLayout() {
           tabBarIcon: tabIcon('person-outline', 'person'),
         }}
       />
+      {/* Reachable via deep links / navigation, but not shown in the tab bar yet. */}
+      <Tabs.Screen name="activity" options={{ href: null }} />
     </Tabs>
   )
 }
