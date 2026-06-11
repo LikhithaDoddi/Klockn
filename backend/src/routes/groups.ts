@@ -359,6 +359,7 @@ groupsRouter.get('/:id', async (req, res) => {
         id: group.id,
         name: group.name,
         createdAt: group.created_at,
+        isOwner: group.organizer_id === organizer.id,
         members: members.map((m) => ({
           ...m,
           busyPeriods: computeBusyPeriods(m.id),

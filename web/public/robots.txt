@@ -1,8 +1,9 @@
 User-agent: *
 Allow: /
-Disallow: /admin.php
-Disallow: /submit.php
-Disallow: /waitlist.csv
-Disallow: /thankyou.html
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /onboarding
+Disallow: /invite/
+Disallow: /join/
 
 Sitemap: https://klockn.com/sitemap.xml

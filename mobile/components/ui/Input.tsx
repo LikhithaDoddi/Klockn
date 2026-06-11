@@ -27,7 +27,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.ink,
+    // Medium gray reads on both the light (create-group) and dark (auth) screens
+    // that share this component; ink was invisible on the dark backgrounds.
+    color: colors.muted,
   },
   input: {
     height: 52,
