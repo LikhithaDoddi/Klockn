@@ -18,7 +18,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.klockn.app",
       "appleTeamId": "MMDX7U6NNW",
-      "buildNumber": "12",
+      "buildNumber": "13",
       "infoPlist": {
         "NSCameraUsageDescription": "Klockn does not use your camera.",
         "NSPhotoLibraryUsageDescription": "Klockn does not access your photos.",
