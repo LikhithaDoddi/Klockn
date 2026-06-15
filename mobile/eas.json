@@ -64,7 +64,10 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6772318758"
+        "ascAppId": "6772318758",
+        "ascApiKeyPath": "./AuthKey_RJUHCY78SN.p8",
+        "ascApiKeyId": "RJUHCY78SN",
+        "ascApiKeyIssuerId": "0984ab9b-7225-4800-a69c-6ce450ef4d20"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
