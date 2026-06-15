@@ -177,6 +177,9 @@ export default function LoginScreen() {
             secureTextEntry
             autoComplete="password"
           />
+          <Link href="/auth/forgot-password" style={styles.forgotLink}>
+            Forgot password?
+          </Link>
           <Button
             label="Sign in"
             onPress={handleLogin}
@@ -281,5 +284,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.violet,
+  },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.violet,
+    marginTop: -4,
   },
 })
