@@ -4,3 +4,7 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# Google Play service account key for EAS auto-submit — never commit (secret credential)
+google-play-service-account.json
+*-service-account.json
