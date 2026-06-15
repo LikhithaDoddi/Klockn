@@ -40,7 +40,7 @@
         "backgroundColor": "#7C3AED"
       },
       "package": "com.klockn.app",
-      "versionCode": 13,
+      "versionCode": 15,
       "googleServicesFile": "./google-services.json"
     },
     "scheme": "klockn",
