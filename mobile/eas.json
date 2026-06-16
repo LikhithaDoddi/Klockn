@@ -1,12 +1,13 @@
 {
   "cli": {
     "version": ">= 10.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.klockn.com",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBE3tSVa1atT-Ym7VG3ao3ZqTmohC0qItM",
@@ -17,12 +18,12 @@
         "EXPO_PUBLIC_FIREBASE_APP_ID": "1:439208454942:web:f3bc6c9095cc58155f770f",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "439208454942-c55pigljsnapf4bv40kvo47rm7isefm0.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "439208454942-g30faiaef9m8pbu5ej4fv4fmdd8rq7j1.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com",
-        "EXPO_PUBLIC_SENTRY_DSN": ""
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com"
       }
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "android": {
         "buildType": "apk"
       },
@@ -36,12 +37,13 @@
         "EXPO_PUBLIC_FIREBASE_APP_ID": "1:439208454942:web:f3bc6c9095cc58155f770f",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "439208454942-c55pigljsnapf4bv40kvo47rm7isefm0.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "439208454942-g30faiaef9m8pbu5ej4fv4fmdd8rq7j1.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com",
-        "EXPO_PUBLIC_SENTRY_DSN": ""
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com"
       }
     },
     "production": {
       "distribution": "store",
+      "autoIncrement": true,
+      "channel": "production",
       "android": {
         "buildType": "app-bundle"
       },
@@ -55,15 +57,21 @@
         "EXPO_PUBLIC_FIREBASE_APP_ID": "1:439208454942:web:f3bc6c9095cc58155f770f",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "439208454942-c55pigljsnapf4bv40kvo47rm7isefm0.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "439208454942-g30faiaef9m8pbu5ej4fv4fmdd8rq7j1.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com",
-        "EXPO_PUBLIC_SENTRY_DSN": ""
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "439208454942-siccjqv5h04rkh0ai2m34fi9blrhpa8h.apps.googleusercontent.com"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6772318758"
+        "ascAppId": "6772318758",
+        "ascApiKeyPath": "./AuthKey_RJUHCY78SN.p8",
+        "ascApiKeyId": "RJUHCY78SN",
+        "ascApiKeyIssuerId": "0984ab9b-7225-4800-a69c-6ce450ef4d20"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "alpha"
       }
     }
   }

@@ -52,13 +52,13 @@ If the founder says "just do it" — still write the brief. It takes 2 minutes a
 | Compute | AWS ECS Fargate | Serverless containers, auto-scaling, no infra management |
 | Cache/Queue | AWS ElastiCache for Redis | Managed Redis for BullMQ job queue |
 | File Storage | AWS S3 | CSV exports, profile images |
-| Email | AWS SES | Transactional email at scale |
+| Email | Resend | Transactional email (invites, password reset); sending domain klockn.com |
 | Secrets | AWS Secrets Manager | Encrypted secrets, no .env in production |
 | Monitoring | Coralogix (free forever) | Observability, logs, alerts |
 | DNS | AWS Route 53 | api.klockn.com routing |
 | Notifications | AWS SNS + Expo | Cross-platform push at scale |
 | Shared types | `/shared` package | Single source of truth for all TypeScript types |
-| CI/CD | GitHub Actions | Auto-deploy to AWS ECS Fargate on push |
+| CI/CD | GitHub Actions + Vercel | Backend/AI → ECS via GitHub Actions; web → Vercel. See "Deployment Triggers" |
 
 ## Branch Rules
 - `main` — founder only. Nothing merges without a PR approval.
@@ -67,6 +67,16 @@ If the founder says "just do it" — still write the brief. It takes 2 minutes a
 - `agent/ai` — AI Engineer works here only
 - Never push directly to main
 - Every feature = one PR per agent = founder reviews before merge
+
+## Deployment Triggers — how each service actually ships
+Deploy branches differ by service. Merging a PR into `main` does NOT deploy everything — verify the trigger before assuming a change is live.
+
+- **Web (klockn.com)** → Vercel. Production branch is `main`; merging to `main` auto-deploys.
+- **Backend (api.klockn.com)** → `.github/workflows/deploy-backend.yml`. Deploys to ECS Fargate (`us-east-2`) on push to `agent/backend` (paths `backend/**`) OR a manual `workflow_dispatch`. It does **not** deploy from `main`.
+- **AI service** → `.github/workflows/deploy-ai.yml`. Deploys on push to `agent/ai` **or** `main` (paths `ai/**`).
+- **Mobile** → EAS Build (binaries) + EAS Update (OTA for JS-only changes). No git trigger; shipped manually via `eas build` / `eas update`.
+
+Practical consequence: a backend change merged to `main` is live on the web side but **not** on the API until it lands on `agent/backend` or you run Deploy Backend manually (`workflow_dispatch`, ref `main`).
 
 ## File Ownership — Strict
 Agents do NOT touch files outside their ownership. If a change requires another agent's files, they open an issue describing what they need — the other agent makes the change.

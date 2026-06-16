@@ -18,7 +18,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.klockn.app",
       "appleTeamId": "MMDX7U6NNW",
-      "buildNumber": "1",
+      "buildNumber": "13",
       "infoPlist": {
         "NSCameraUsageDescription": "Klockn does not use your camera.",
         "NSPhotoLibraryUsageDescription": "Klockn does not access your photos.",
@@ -40,9 +40,16 @@
         "backgroundColor": "#7C3AED"
       },
       "package": "com.klockn.app",
-      "versionCode": 1
+      "versionCode": 15,
+      "googleServicesFile": "./google-services.json"
     },
     "scheme": "klockn",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1b7bc7c5-4dbc-4bf1-84e3-78f353a78a89"
+    },
     "plugins": [
       "expo-router",
       "expo-apple-authentication",
@@ -52,6 +59,15 @@
         {
           "icon": "./assets/icon.png",
           "color": "#7C3AED"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
         }
       ]
     ],
