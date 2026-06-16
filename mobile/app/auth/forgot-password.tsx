@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
-import { sendPasswordResetEmail } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { api } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { KlocknLogo } from '@/components/KlocknLogo'
@@ -24,15 +23,12 @@ export default function ForgotPasswordScreen() {
     setError(null)
     setLoading(true)
     try {
-      await sendPasswordResetEmail(auth, trimmed)
+      // The backend generates the reset link and sends a branded email via
+      // Resend, and always responds with success regardless of whether the
+      // account exists (account-enumeration protection lives server-side).
+      await api.post('/api/v1/auth/password-reset', { email: trimmed })
       setSent(true)
     } catch (e: unknown) {
-      // Treat "user-not-found" as success so we never reveal whether an
-      // account exists for a given email (account-enumeration protection).
-      if (e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'auth/user-not-found') {
-        setSent(true)
-        return
-      }
       setError(friendlyError(e))
     } finally {
       setLoading(false)
@@ -99,15 +95,12 @@ export default function ForgotPasswordScreen() {
 }
 
 function friendlyError(e: unknown): string {
-  if (e && typeof e === 'object' && 'code' in e) {
-    const code = (e as { code: string }).code
-    if (code === 'auth/invalid-email') {
-      return 'Please enter a valid email address.'
-    }
-    if (code === 'auth/too-many-requests') {
+  if (e && typeof e === 'object') {
+    const err = e as { response?: { status?: number }; code?: string }
+    if (err.response?.status === 429) {
       return 'Too many attempts. Try again in a few minutes.'
     }
-    if (code === 'auth/network-request-failed') {
+    if (err.code === 'ERR_NETWORK' || !err.response) {
       return 'No internet connection.'
     }
   }
