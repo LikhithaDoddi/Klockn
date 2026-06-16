@@ -19,6 +19,7 @@ import { ticketsRouter } from './routes/tickets'
 import { webhooksRouter } from './routes/webhooks'
 import { inviteRouter } from './routes/invite'
 import { internalRouter } from './routes/internal'
+import { authRouter } from './routes/auth'
 import { aiRouter } from './routes/ai'
 import { startWorkers } from './jobs/worker'
 import { validateEnv } from './lib/env'
@@ -78,6 +79,7 @@ app.use('/api/v1/groups', groupsRouter)
 app.use('/api/v1/groups', groupInviteRouter)   // /:id/join-link (auth required)
 app.use('/api/v1', groupInviteRouter)           // /join/:token (public)
 app.use('/api/v1/invite', inviteRouter)
+app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/internal', internalRouter)
 app.use('/api/v1/ai', aiRouter)
 app.use('/api/v1/events', eventsRouter)
